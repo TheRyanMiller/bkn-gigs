@@ -1,0 +1,30 @@
+name: Scrape Brooklyn Events
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements.txt
+      - run: python scrape.py
+        env:
+          APP_SLUG: bkn-gigs
+          APP_ENV: prod
+          R2_KEY_PREFIX: apps/bkn-gigs/prod
+          R2_PUBLIC_PREFIX: apps/bkn-gigs/prod/public
+          R2_STATE_PREFIX: apps/bkn-gigs/prod/state
+          R2_SHARED_PREFIX: shared
+          R2_SHARE_ARTIST_CACHES: "true"
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
