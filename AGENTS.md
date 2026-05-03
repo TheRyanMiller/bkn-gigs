@@ -1,47 +1,91 @@
 # Agent Instructions for BKN Gigs
 
-BKN Gigs is a Brooklyn event aggregator forked from ATL Gigs. The source reference repository is:
+BKN Gigs is a planning scaffold for a future Brooklyn event aggregator. It is intentionally a sibling directory to ATL Gigs, not a copy of the ATL source tree.
+
+Reference repository:
 
 `/Users/wavey/code/atl-music`
 
-Use that repo as the canonical reference for architecture, scraper patterns, validation, pipeline behavior, and frontend conventions. Do not modify `../atl-music` unless the user explicitly asks; compare against it when porting or checking existing behavior.
+Current repository:
 
-## Project Overview
+`/Users/wavey/code/bkn-gigs`
 
-This repository has the same starting architecture as ATL Gigs:
+Do not modify `../atl-music` unless the user explicitly asks. Use it as the implementation reference when creating the Brooklyn version.
 
-1. **Python scraper** (`scrape.py`, logic in `scraper/`): Fetches events from venue websites and ticketing APIs.
-2. **React frontend** (`atl-gigs/` for now): Displays events with filtering.
+## Current State
 
-Events flow:
+This repo should stay mostly empty until implementation begins. The intended tracked files right now are:
 
-`Venue APIs/Websites -> scraper/ -> scrape.py -> events.json -> React app -> Vercel`
+- `AGENTS.md`
+- `PLAN.md`
 
-The frontend directory is still named `atl-gigs/` in the initial copy. Rename or reorganize it only as part of an explicit Brooklynization pass.
+Do not add scraper/frontend/source files until the user asks to begin implementation.
 
 ## Git Workflow
 
 - Make a commit for each meaningful change.
-- Use clean, imperative commit messages, for example `Bootstrap Brooklyn gigs repository` or `Add Brooklyn Steel scraper`.
-- Do not commit secrets, local generated event JSON, virtualenvs, `node_modules`, build output, or caches.
-- Preserve user changes in a dirty worktree. Never revert unrelated edits unless explicitly asked.
+- Use clean, imperative commit messages.
+- Keep the repo lightweight while it is in planning mode.
+- Do not copy the ATL project wholesale into this repo without explicit permission.
+- When implementation starts, add files intentionally and in small phases.
 
-## Reference Paths From ATL Gigs
+## ATL Reference Paths
 
-When implementing Brooklyn changes, start with these files in `../atl-music`:
+When recreating the app for Brooklyn, use these ATL files as references:
 
-- `scraper/registry.py` - scraper registration and Ticketmaster fallback pattern.
-- `scraper/tm.py` - Ticketmaster venue and artist classification integration.
-- `scraper/venues/live_nation.py` - Live Nation GraphQL scraper pattern.
-- `scraper/venues/aeg.py` - Bowery/AEG-style event page scraping pattern.
-- `scraper/utils/categories.py` - category detection helpers.
-- `scraper/pipeline/validate.py` - event schema validation.
-- `scrapers/*.md` - documentation style for venue scrapers.
-- `atl-gigs/src/types.ts` and `atl-gigs/api/og.ts` - frontend category and OG metadata behavior.
+- `../atl-music/scrape.py` - scraper entrypoint and event pipeline flow.
+- `../atl-music/scraper/registry.py` - scraper registration and fallback pattern.
+- `../atl-music/scraper/tm.py` - Ticketmaster integration and enrichment.
+- `../atl-music/scraper/venues/live_nation.py` - Live Nation GraphQL scraper pattern.
+- `../atl-music/scraper/venues/aeg.py` - reusable venue event parsing pattern.
+- `../atl-music/scraper/utils/` - date, category, event, and description helpers.
+- `../atl-music/scraper/pipeline/` - validation, merge, R2, metrics, and IO behavior.
+- `../atl-music/scrapers/*.md` - venue documentation examples.
+- `../atl-music/atl-gigs/src/` - frontend components and filtering UX.
+- `../atl-music/atl-gigs/api/` - Vercel OG endpoints.
+- `../atl-music/.github/workflows/scrape.yml` - scheduled scrape automation.
 
-## Shared Data Store
+## Future Event Schema
 
-BKN Gigs uses the same Cloudflare R2 store as ATL Gigs, but all app-specific files must be namespaced. Never add new flat root R2 keys.
+When implementation begins, every Brooklyn scraper should return events matching the ATL schema:
+
+```python
+{
+    "venue": str,
+    "date": str,
+    "doors_time": str | None,
+    "show_time": str | None,
+    "artists": [
+        {"name": str, "genre": str | None, "spotify_url": str | None}
+    ],
+    "ticket_url": str,
+    "info_url": str | None,
+    "image_url": str | None,
+    "description": str | None,
+    "price": str | None,
+    "category": str,
+}
+```
+
+Required fields:
+
+- `venue`
+- `date`
+- `artists` with at least one item
+- `ticket_url`
+- `category`
+
+Allowed categories:
+
+- `concerts`
+- `comedy`
+- `broadway`
+- `sports`
+- `misc`
+
+## Shared Data Store Plan
+
+BKN Gigs should eventually use the same Cloudflare R2 store as ATL Gigs, but all app-specific files must be namespaced.
 
 Brooklyn app data:
 
@@ -59,62 +103,15 @@ shared/artist-cache.json
 shared/artist-spotify-cache.json
 ```
 
-Use the key constants in `scraper/config.py` instead of string literals:
+Isolation rules:
 
-- `config.R2_EVENTS_KEY`
-- `config.R2_STATUS_KEY`
-- `config.R2_SEEN_CACHE_KEY`
-- `config.R2_LOG_KEY`
-- `config.R2_ARTIST_CACHE_KEY`
-- `config.R2_SPOTIFY_CACHE_KEY`
-
-The frontend and OG API should read from `R2_PUBLIC_BASE_URL`/`VITE_R2_PUBLIC_BASE_URL`, which should point at `.../apps/bkn-gigs/prod/public`.
-
-## Event Schema
-
-Every scraper must return events matching this structure:
-
-```python
-{
-    "venue": str,
-    "date": str,               # "YYYY-MM-DD"
-    "doors_time": str | None,  # "HH:MM" 24-hour
-    "show_time": str | None,   # "HH:MM" 24-hour
-    "artists": [
-        {"name": str, "genre": str | None, "spotify_url": str | None}
-    ],
-    "ticket_url": str,
-    "info_url": str | None,
-    "image_url": str | None,
-    "description": str | None,
-    "price": str | None,
-    "category": str,           # concerts, comedy, broadway, sports, misc
-}
-```
-
-Required fields:
-
-- `venue`
-- `date`
-- `artists` with at least one performer/title
-- `ticket_url`
-- `category`
-
-## Categories
-
-Use the existing category set unless the user explicitly asks to add more:
-
-- `concerts` - Music performances. This is the default for music-first Brooklyn venues.
-- `comedy` - Stand-up, improv, sketch, comedy showcases, comedy podcasts.
-- `broadway` - Theater, musicals, plays.
-- `sports` - Sporting events.
-- `misc` - Everything else.
-
-When venue pages are mixed, prefer structured ticketing classifications first. If unavailable, use `detect_category_from_text()` and ticket URL hints from `scraper/utils/categories.py`.
+- Do not read or write flat root R2 keys such as `events.json` or `seen-cache.json`.
+- Do not read or write ATL app keys such as `apps/atl-gigs/prod/public/events.json`.
+- `artist-cache.json` and `artist-spotify-cache.json` may be shared because they are artist enrichment caches, not event history.
 
 ## Initial Brooklyn Venue Scope
 
-The starting Brooklyn venue list is:
+Seed venues:
 
 - Baby's All Right
 - Music Hall of Williamsburg
@@ -132,7 +129,7 @@ The starting Brooklyn venue list is:
 - Brooklyn Comedy Collective
 - Brooklyn Paramount
 
-Known alternates for later:
+Later candidates:
 
 - Kings Theatre
 - Isola Brooklyn
@@ -143,60 +140,12 @@ Known exclusions for now:
 - Brooklyn Made: official page says it is closed and shows are cancelled.
 - Music Hall of Williamsburg is active during 2026 but should be monitored because public reporting says its current lease ends at the end of 2026.
 
-## Scraper Source Strategy
+## Implementation Guidance
 
-Before writing a scraper, inspect the venue source in this order:
+When the user asks to build the app:
 
-1. **Upstream ticketing API**: Ticketmaster, Live Nation, AXS, Eventbrite, DICE, See Tickets.
-2. **Venue JSON or GraphQL API**: Network tab, `/api`, `wp-json`, embedded app data.
-3. **Venue HTML**: Use only when structured sources are unavailable.
-
-Likely starting mappings:
-
-- Ticketmaster/Live Nation: The Bell House, Warsaw, Brooklyn Paramount, possibly Brooklyn Bowl.
-- Bowery/AXS: Brooklyn Steel, Music Hall of Williamsburg.
-- See Tickets: Baby's All Right.
-- DICE: Union Pool and possibly other small rooms.
-- Eventbrite: Union Hall, Brooklyn Comedy Collective, Isola Brooklyn if added.
-- Venue-owned site/API: Elsewhere, Littlefield, Market Hotel, The Sultan Room, C'mon Everybody.
-
-Always verify source completeness against the venue calendar. Homepages and JSON-LD often include only featured shows.
-
-## Adding Or Modifying Scrapers
-
-For every scraper change:
-
-1. Inspect existing docs in `scrapers/` for similar venues.
-2. Prefer reusable source-specific scrapers over one-off HTML parsing.
-3. Normalize dates and times with helpers in `scraper/utils/`.
-4. Return valid event dictionaries matching the schema.
-5. Register the scraper in `scraper/registry.py`, or add the venue to the relevant source registry.
-6. Add or update `scrapers/{venue-slug}.md`.
-7. Run a focused scraper check, then `python scrape.py` when practical.
-
-Minimum venue documentation sections:
-
-- Scraping approach
-- Category mappings
-- Edge cases
-- Opinionated decisions
-
-## Verification
-
-Useful commands:
-
-```bash
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-python scrape.py
-pytest
-
-cd atl-gigs
-npm install
-npm run lint
-npm test
-npm run build
-```
-
-If a command cannot be run because credentials are missing, say so clearly and run the best available subset.
+1. Recreate the project structure deliberately from ATL patterns.
+2. Start with scraper source discovery and venue docs before code.
+3. Prefer source-specific reusable scrapers over one-off HTML parsing.
+4. Add frontend files only after the scraper/pipeline shape is clear.
+5. Keep Brooklyn-specific naming, data paths, and venue docs from the beginning.

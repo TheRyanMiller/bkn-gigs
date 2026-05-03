@@ -1,17 +1,33 @@
 # BKN Gigs Plan
 
-This repository is a sibling fork of ATL Gigs, copied from `/Users/wavey/code/atl-music` on May 3, 2026. Treat `../atl-music` as the implementation reference while this repo becomes Brooklyn-specific.
+This repository is intentionally a lightweight planning scaffold at:
 
-## Goals
+`/Users/wavey/code/bkn-gigs`
 
-- Build a Brooklyn event aggregator focused on live music, especially indie rock, and comedy.
-- Preserve the proven ATL scraper pipeline, event schema, enrichment, and frontend filtering model.
-- Replace Atlanta venue coverage with Brooklyn venue coverage.
-- Keep scraper docs complete so future venue maintenance is straightforward.
+It is a sibling of the existing ATL project:
+
+`/Users/wavey/code/atl-music`
+
+The goal is to recreate the ATL Gigs concept for Brooklyn venues, not to keep a full copied ATL codebase here before implementation begins.
+
+## Current Status
+
+- Keep this repo mostly empty for now.
+- Tracked planning files should be limited to `AGENTS.md` and `PLAN.md`.
+- Use `../atl-music` as the reference implementation when the rebuild starts.
+- Do not copy ATL source wholesale into this repo unless explicitly requested.
+
+## Product Goal
+
+Build a Brooklyn event aggregator focused on:
+
+- Live music, especially indie rock and adjacent touring acts.
+- Comedy, including stand-up, sketch, alt comedy, and local showcases.
+- A similar user experience to ATL Gigs: searchable/filterable event listings, event detail modals, favorites, shareable event links, and scraper status visibility.
 
 ## Shared Data Store Layout
 
-BKN Gigs should use the same Cloudflare R2 data store as ATL Gigs without sharing app-specific files. The Brooklyn app owns an app-scoped namespace:
+BKN Gigs should use the same Cloudflare R2 store as ATL Gigs, but app-specific data must be isolated by namespace.
 
 ```text
 apps/
@@ -28,23 +44,25 @@ shared/
   artist-spotify-cache.json
 ```
 
-Isolation rules:
+Rules:
 
-- Public app data lives under `apps/bkn-gigs/prod/public/`.
-- Brooklyn-only scrape state lives under `apps/bkn-gigs/prod/state/`.
-- Do not read or write flat root keys such as `events.json` or `seen-cache.json`.
-- Do not read or write ATL app keys such as `apps/atl-gigs/prod/public/events.json`.
-- `artist-cache.json` and `artist-spotify-cache.json` may be shared under `shared/` because they are artist enrichment caches, not event history. Set `R2_SHARE_ARTIST_CACHES=false` to keep those under the BKN app state namespace instead.
+- Brooklyn public data lives under `apps/bkn-gigs/prod/public/`.
+- Brooklyn scrape state lives under `apps/bkn-gigs/prod/state/`.
+- Never use shared flat keys like `events.json`, `seen-cache.json`, or `scrape-status.json`.
+- Never read ATL app event data from BKN.
+- Artist enrichment caches can be shared under `shared/` because they are not venue/event history.
 
-Current implementation defaults:
+Planned environment defaults:
 
-- `APP_SLUG=bkn-gigs`
-- `APP_ENV=prod`
-- `R2_KEY_PREFIX=apps/bkn-gigs/prod`
-- `R2_PUBLIC_BASE_URL=https://pub-756023fa49674586a44105ba7bf52137.r2.dev/apps/bkn-gigs/prod/public`
-- `R2_BUCKET_NAME=atl-gigs-data` for compatibility with the existing store. This can be changed to a neutral bucket name later with an environment variable.
-
-ATL Gigs still uses flat root keys in its current implementation. If ATL is migrated later, use `apps/atl-gigs/prod/...` for its app data and keep only enrichment caches in `shared/`.
+```text
+APP_SLUG=bkn-gigs
+APP_ENV=prod
+R2_KEY_PREFIX=apps/bkn-gigs/prod
+R2_PUBLIC_PREFIX=apps/bkn-gigs/prod/public
+R2_STATE_PREFIX=apps/bkn-gigs/prod/state
+R2_SHARED_PREFIX=shared
+R2_SHARE_ARTIST_CACHES=true
+```
 
 ## Initial Venue List
 
@@ -76,93 +94,77 @@ Later candidates:
 
 Do not seed Brooklyn Made now. Its official page says it is closed and shows are cancelled.
 
-## Phase 1: Bootstrap And Rename
+## Phase 1: Source Discovery
 
-- Initialize this sibling repo as a fresh git repository.
-- Keep the initial copy close to `../atl-music` for easy diffing.
-- Update project docs from ATL Gigs to BKN Gigs.
-- Rename user-facing ATL branding in `README.md`, frontend metadata, headers, OG tags, generated image assets, and deployment config.
-- Decide whether to rename the frontend folder from `atl-gigs/` to `bkn-gigs/`. The folder name can remain temporarily if renaming creates unnecessary churn.
+For each venue:
 
-Reference files:
+- Check upstream ticketing first: Ticketmaster, Live Nation, AXS, Eventbrite, DICE, See Tickets.
+- Inspect network requests for JSON or GraphQL APIs.
+- Compare API event count against the visible calendar.
+- Avoid JSON-LD unless it represents the full event list.
+- Record source notes before writing scraper code.
 
-- `../atl-music/README.md`
-- `../atl-music/atl-gigs/src/App.tsx`
-- `../atl-music/atl-gigs/src/types.ts`
-- `../atl-music/atl-gigs/api/og.ts`
-
-## Phase 2: Source Discovery
-
-For each venue, document the best source before implementing code:
-
-- Check upstream ticketing links first: Ticketmaster, Live Nation, AXS, Eventbrite, DICE, See Tickets.
-- Inspect network requests for JSON/GraphQL APIs.
-- Compare event count against visible calendar pages.
-- Avoid JSON-LD unless it matches the full calendar.
-- Record source notes in `scrapers/{venue-slug}.md`.
-
-Reference files:
+Reference from ATL:
 
 - `../atl-music/scrapers/live-nation.md`
 - `../atl-music/scrapers/terminal-west.md`
 - `../atl-music/scrapers/fox-theatre.md`
 
-## Phase 3: Implement Shared Source Scrapers
+## Phase 2: Recreate Core Scraper App
 
-Implement source groups before one-off venue scrapers:
+Create only the files needed for the Brooklyn scraper:
 
-1. Bowery/AXS scraper for Brooklyn Steel and Music Hall of Williamsburg.
-2. Ticketmaster/Live Nation scraper entries for The Bell House, Warsaw, Brooklyn Paramount, and possibly Brooklyn Bowl.
-3. Eventbrite scraper support for Union Hall and Brooklyn Comedy Collective if API or embedded JSON is practical.
-4. See Tickets scraper support for Baby's All Right.
-5. DICE scraper support for Union Pool if a stable public source is available.
-6. Venue-specific scrapers for Elsewhere, Littlefield, Market Hotel, The Sultan Room, and C'mon Everybody.
+- Python package structure under `scraper/`.
+- `scrape.py` entrypoint.
+- Validation, merge, R2, and utility modules based on ATL behavior.
+- Brooklyn-specific venue registry.
+- Venue docs under `scrapers/`.
 
-Reference files:
+Reference from ATL:
 
-- `../atl-music/scraper/tm.py`
-- `../atl-music/scraper/venues/live_nation.py`
-- `../atl-music/scraper/venues/aeg.py`
+- `../atl-music/scrape.py`
+- `../atl-music/scraper/pipeline/`
+- `../atl-music/scraper/utils/`
 - `../atl-music/scraper/registry.py`
 
-## Phase 4: Category And Enrichment Behavior
+## Phase 3: Implement Venue Scrapers
 
-- Keep the existing category set: `concerts`, `comedy`, `broadway`, `sports`, `misc`.
-- Default music-first rooms to `concerts`.
-- Use Ticketmaster classifications when available.
-- Use text detection for mixed calendars and comedy-heavy venues.
-- Keep Spotify enrichment for music artists, but avoid doing Spotify lookups for obvious comedy event titles where possible.
+Implement source groups before one-off scrapers:
 
-Reference files:
+1. Bowery/AXS: Brooklyn Steel and Music Hall of Williamsburg.
+2. Ticketmaster/Live Nation: The Bell House, Warsaw, Brooklyn Paramount, possibly Brooklyn Bowl.
+3. Eventbrite: Union Hall and Brooklyn Comedy Collective if practical.
+4. See Tickets: Baby's All Right.
+5. DICE: Union Pool if a stable source exists.
+6. Venue-specific sources: Elsewhere, Littlefield, Market Hotel, The Sultan Room, C'mon Everybody.
 
-- `../atl-music/scraper/utils/categories.py`
-- `../atl-music/scraper/spotify_enrichment.py`
-- `../atl-music/scraper/tm.py`
+Each scraper must have `scrapers/{venue-slug}.md` documentation.
 
-## Phase 5: Frontend Brooklynization
+## Phase 4: Recreate Frontend
 
-- Change site name, copy, metadata, OG tags, default images, and generated assets from ATL Gigs to BKN Gigs.
-- Review filters and labels for Brooklyn usage.
-- Keep the existing event modal, slug routes, first-seen tracking, and category UX unless there is a clear Brooklyn-specific need.
-- Update Vercel and workflow configuration after deployment target is known.
+After scraper output is stable, recreate the frontend deliberately:
 
-Reference files:
+- Use ATL Gigs frontend behavior as a reference.
+- Use Brooklyn naming and metadata from the start.
+- Read data from `apps/bkn-gigs/prod/public/events.json`.
+- Keep filters, event modals, favorites, status modal, and share links unless a Brooklyn-specific change is needed.
+
+Reference from ATL:
 
 - `../atl-music/atl-gigs/src/`
 - `../atl-music/atl-gigs/api/`
-- `../atl-music/.github/workflows/scrape.yml`
+- `../atl-music/atl-gigs/vercel.json`
 
-## Phase 6: Testing And Launch
+## Phase 5: Automation And Launch
 
-- Add focused unit tests for reusable source parsers.
-- Run individual scraper checks as each venue lands.
-- Run `python scrape.py` with available API keys.
-- Run frontend lint, tests, and production build.
-- Confirm generated event JSON is valid and categories render correctly.
-- Create a launch checklist for domain, Vercel project, secrets, GitHub Actions schedule, and cache/R2 behavior.
+- Add GitHub Actions scrape workflow after scraper paths exist.
+- Configure Cloudflare R2 secrets and app-scoped paths.
+- Configure Vercel project and site URL.
+- Run scraper tests, full scrape, frontend tests, and production build.
+- Confirm Brooklyn data does not merge with ATL data.
 
-## Current Status
+## Open Decisions
 
-- Sibling working copy created at `/Users/wavey/code/bkn-gigs`.
-- Local secrets, git metadata, virtualenvs, `node_modules`, build output, and caches were not copied.
-- Initial Brooklyn-specific `AGENTS.md` and `PLAN.md` have been added.
+- Final frontend folder name: likely `bkn-gigs/`, but decide when implementation begins.
+- Final public domain and Vercel project name.
+- Whether ATL should also migrate from flat R2 root keys to `apps/atl-gigs/prod/`.
