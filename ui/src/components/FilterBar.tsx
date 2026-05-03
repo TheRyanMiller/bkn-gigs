@@ -51,7 +51,7 @@ const FilterPill = ({
       border whitespace-nowrap h-full
       ${
         active
-          ? "bg-teal-500/10 border-teal-500/50 text-teal-300"
+          ? "bg-fuchsia-500/10 border-fuchsia-500/50 text-fuchsia-300"
           : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:text-white"
       }
     `}
@@ -99,7 +99,7 @@ const TogglePill = ({
           border whitespace-nowrap h-full
           ${
             active
-              ? "bg-teal-500/10 border-teal-500/50 text-teal-300"
+              ? "bg-fuchsia-500/10 border-fuchsia-500/50 text-fuchsia-300"
               : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:text-white"
           }
         `}
@@ -271,7 +271,7 @@ export default function FilterBar({
         {/* Search Input */}
         <div className="relative flex-1 group">
           <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-teal-500 transition-colors"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-fuchsia-500 transition-colors"
             size={20}
           />
           <input
@@ -279,7 +279,7 @@ export default function FilterBar({
             placeholder="Search artists, venues, etc..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-neutral-900 border border-neutral-800 rounded-2xl py-3 md:py-2.5 pl-12 pr-12 text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-transparent transition-colors"
+            className="w-full bg-neutral-900 border border-neutral-800 rounded-2xl py-3 md:py-2.5 pl-12 pr-12 text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 focus:border-transparent transition-colors"
           />
           {searchQuery && (
             <button
@@ -337,7 +337,7 @@ export default function FilterBar({
                       className={`
                         flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors select-none
                         ${selectedCategories.includes(category)
-                          ? "bg-teal-500/20 text-teal-300 border border-teal-500/50"
+                          ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/50"
                           : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 hover:text-white"
                         }
                       `}
@@ -383,7 +383,7 @@ export default function FilterBar({
                       className={`
                         px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap text-left select-none
                         ${selectedVenues.includes(venue)
-                          ? "bg-teal-500/20 text-teal-300 border border-teal-500/50"
+                          ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/50"
                           : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 hover:text-white"
                         }
                       `}
@@ -427,7 +427,7 @@ export default function FilterBar({
                       min={threeMonthsAgo}
                       onChange={(e) => setStartDate(e.target.value)}
                       style={{ colorScheme: 'dark' }}
-                      className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
                     />
                   </div>
                   <div>
@@ -440,14 +440,14 @@ export default function FilterBar({
                       min={startDate || threeMonthsAgo}
                       onChange={(e) => setEndDate(e.target.value)}
                       style={{ colorScheme: 'dark' }}
-                      className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
                     />
                   </div>
                   {hasDateFilter && (
                     <button
                       type="button"
                       onClick={clearDateFilter}
-                      className="w-full text-sm text-teal-400 hover:text-teal-300 transition-colors py-1"
+                      className="w-full text-sm text-fuchsia-400 hover:text-fuchsia-300 transition-colors py-1"
                     >
                       Clear dates
                     </button>
@@ -543,7 +543,7 @@ export default function FilterBar({
                   className={`
                     flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors select-none
                     ${selectedCategories.includes(category)
-                      ? "bg-teal-500/20 text-teal-300 border border-teal-500/50"
+                      ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/50"
                       : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 hover:text-white active:bg-neutral-600"
                     }
                   `}
@@ -581,7 +581,7 @@ export default function FilterBar({
                   className={`
                     px-2 py-1 rounded-md text-xs font-medium transition-colors select-none
                     ${selectedVenues.includes(venue)
-                      ? "bg-teal-500/20 text-teal-300 border border-teal-500/50"
+                      ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/50"
                       : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 hover:text-white active:bg-neutral-600"
                     }
                   `}
@@ -612,7 +612,7 @@ export default function FilterBar({
                   min={threeMonthsAgo}
                   onChange={(e) => setStartDate(e.target.value)}
                   style={{ colorScheme: 'dark' }}
-                  className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none"
+                  className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500 appearance-none"
                 />
               </div>
               <div>
@@ -625,14 +625,14 @@ export default function FilterBar({
                   min={startDate || threeMonthsAgo}
                   onChange={(e) => setEndDate(e.target.value)}
                   style={{ colorScheme: 'dark' }}
-                  className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none"
+                  className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500 appearance-none"
                 />
               </div>
               {hasDateFilter && (
                 <button
                   type="button"
                   onClick={clearDateFilter}
-                  className="w-full text-sm text-teal-400 hover:text-teal-300 transition-colors py-1"
+                  className="w-full text-sm text-fuchsia-400 hover:text-fuchsia-300 transition-colors py-1"
                 >
                   Clear dates
                 </button>

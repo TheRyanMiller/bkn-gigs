@@ -95,7 +95,7 @@ export default function EventModal({ event, onClose }: EventModalProps) {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <Dialog.Panel className="relative w-full max-h-[calc(100dvh-4rem)] transform overflow-hidden rounded-2xl bg-neutral-900 border-2 border-teal-500/40 text-left shadow-xl sm:my-8 sm:max-h-[calc(100vh-2rem)] sm:max-w-3xl">
+              <Dialog.Panel className="relative w-full max-h-[calc(100dvh-4rem)] transform overflow-hidden rounded-2xl bg-neutral-900 border-2 border-fuchsia-500/40 text-left shadow-xl sm:my-8 sm:max-h-[calc(100vh-2rem)] sm:max-w-3xl">
                 {/* Favorite button - top right */}
                 <button
                   type="button"
@@ -125,7 +125,7 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                     )}
                     {/* Date overlay */}
                     <div className="absolute top-4 left-4 flex flex-col items-center justify-center bg-neutral-950 border border-neutral-700 w-14 h-14 rounded-xl">
-                      <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">
+                      <span className="text-[10px] font-bold text-fuchsia-400 uppercase tracking-wider">
                         {month}
                       </span>
                       <span className="text-xl font-bold text-white leading-none">
@@ -150,7 +150,7 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                             href={artists[0].spotify_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline text-teal-400 hover:text-teal-300 ml-2"
+                            className="inline text-fuchsia-400 hover:text-fuchsia-300 ml-2"
                             aria-label="Open Spotify artist"
                           >
                             <FontAwesomeIcon icon={faSpotify} className="inline-block w-[1.1rem] h-[1.1rem] -translate-y-0.5" />
@@ -170,7 +170,7 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                                   href={artist.spotify_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline text-teal-400 hover:text-teal-300 ml-1"
+                                  className="inline text-fuchsia-400 hover:text-fuchsia-300 ml-1"
                                   aria-label="Open Spotify artist"
                                 >
                                   <FontAwesomeIcon icon={faSpotify} className="inline-block w-[0.66rem] h-[0.66rem] -translate-y-0.5" />
@@ -183,18 +183,18 @@ export default function EventModal({ event, onClose }: EventModalProps) {
 
                       <div className="space-y-3 mb-6">
                         <div className="flex items-center gap-2 text-neutral-300 text-sm">
-                          <MapPin size={14} className="text-teal-500" />
+                          <MapPin size={14} className="text-fuchsia-500" />
                           <span>{venue}{stage && ` (${stage})`}</span>
                         </div>
 
                         <div className="flex items-center gap-2 text-neutral-300 text-sm">
-                          <CalendarDays size={14} className="text-teal-500" />
+                          <CalendarDays size={14} className="text-fuchsia-500" />
                           <span>{formattedDate}</span>
                         </div>
 
                         {doors_time && (
                           <div className="flex items-center gap-2 text-neutral-300 text-sm">
-                            <Clock size={14} className="text-teal-500" />
+                            <Clock size={14} className="text-fuchsia-500" />
                             <span>
                               Doors {formatTime(doors_time)}
                               {show_time && ` · Show ${formatTime(show_time)}`}
@@ -204,7 +204,7 @@ export default function EventModal({ event, onClose }: EventModalProps) {
 
                         {price && (
                           <div className="flex items-center gap-2 text-neutral-300 text-sm">
-                            <Ticket size={14} className="text-teal-500" />
+                            <Ticket size={14} className="text-fuchsia-500" />
                             <span>{price}</span>
                           </div>
                         )}
@@ -213,7 +213,7 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                       {descriptionText && (
                         <div className="mb-6 border-t border-neutral-800 pt-5 sm:mb-4">
                           <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-neutral-100">
-                            <Info size={14} className="text-teal-500" />
+                            <Info size={14} className="text-fuchsia-500" />
                             <span>About</span>
                           </div>
                           <div
@@ -232,7 +232,7 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                               type="button"
                               onClick={() => setDescriptionExpanded((expanded) => !expanded)}
                               aria-expanded={descriptionExpanded}
-                              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-400 transition-colors hover:text-teal-300"
+                              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-fuchsia-400 transition-colors hover:text-fuchsia-300"
                             >
                               {descriptionExpanded ? (
                                 <>
@@ -259,14 +259,14 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                         {copied ? (
                           <Check size={18} className="text-green-400" />
                         ) : (
-                          <Share2 size={18} className="text-teal-400" />
+                          <Share2 size={18} className="text-fuchsia-400" />
                         )}
                       </button>
                       <a
                         href={ticket_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white transition-colors"
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white transition-colors"
                       >
                         <Ticket size={16} />
                         Tickets

@@ -68,7 +68,7 @@ export default function Favorites({ events, loading, onEventClick }: FavoritesPr
 
         {loading && (
           <div className="text-center py-20">
-            <Loader2 size={48} className="mx-auto text-teal-500 animate-spin" />
+            <Loader2 size={48} className="mx-auto text-fuchsia-500 animate-spin" />
           </div>
         )}
 
@@ -81,7 +81,7 @@ export default function Favorites({ events, loading, onEventClick }: FavoritesPr
             </p>
             <Link
               to="/"
-              className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white transition-colors"
+              className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white transition-colors"
             >
               Browse Events
             </Link>

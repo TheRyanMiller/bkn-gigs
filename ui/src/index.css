@@ -22,8 +22,8 @@ body {
 
 /* Selection color */
 ::selection {
-  background-color: rgba(20, 184, 166, 0.3);
-  color: rgb(204, 251, 241);
+  background-color: rgba(217, 70, 239, 0.3);
+  color: rgb(245, 208, 254);
 }
 
 /* Hide scrollbar but keep functionality */

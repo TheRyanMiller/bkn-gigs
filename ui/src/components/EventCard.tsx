@@ -68,7 +68,7 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
 
   return (
     <div
-      className="group relative bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-teal-500/30 rounded-2xl overflow-hidden transition-colors duration-200 flex flex-col sm:flex-row sm:items-stretch cursor-pointer sm:h-[195px]"
+      className="group relative bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-fuchsia-500/30 rounded-2xl overflow-hidden transition-colors duration-200 flex flex-col sm:flex-row sm:items-stretch cursor-pointer sm:h-[195px]"
       style={mobileHeight ? { height: mobileHeight } : undefined}
       onClick={onClick}
     >
@@ -89,13 +89,13 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
 
         {/* Date Box overlay on image */}
         <div className="flex absolute top-1.5 left-2 sm:top-1.5 sm:left-1.5 flex-col items-center justify-center bg-neutral-950 border border-neutral-700 w-11 h-11 rounded-xl z-10">
-          <span className="text-[9px] font-bold text-teal-400 uppercase tracking-wider">{month}</span>
+          <span className="text-[9px] font-bold text-fuchsia-400 uppercase tracking-wider">{month}</span>
           <span className="text-base font-bold text-white leading-none">{day}</span>
         </div>
 
         {/* New Badge overlay on image (bottom right) */}
         {is_new && (
-          <div className="absolute bottom-1.5 right-1 sm:bottom-1.5 sm:right-1.5 bg-teal-400 text-neutral-900 text-[9px] font-bold uppercase tracking-tight px-1.5 py-0.5 rounded z-10 shadow-md shadow-black/50 border border-black/30">
+          <div className="absolute bottom-1.5 right-1 sm:bottom-1.5 sm:right-1.5 bg-fuchsia-400 text-neutral-900 text-[9px] font-bold uppercase tracking-tight px-1.5 py-0.5 rounded z-10 shadow-md shadow-black/50 border border-black/30">
             Just Added!
           </div>
         )}
@@ -118,14 +118,14 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
         {/* Text block */}
         <div className="flex-1 sm:w-[70%]">
           <div className="mb-2.5">
-            <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-teal-300 transition-colors leading-snug pr-20 sm:pr-0 line-clamp-2">
+            <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-fuchsia-300 transition-colors leading-snug pr-20 sm:pr-0 line-clamp-2">
               {mainArtist}
               {artists[0]?.spotify_url && (
                 <a
                   href={artists[0].spotify_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline text-teal-400 hover:text-teal-300 ml-2"
+                  className="inline text-fuchsia-400 hover:text-fuchsia-300 ml-2"
                   onClick={(e) => e.stopPropagation()}
                   aria-label="Open Spotify artist"
                 >
@@ -146,7 +146,7 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
                         href={artist.spotify_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline text-teal-400 hover:text-teal-300 ml-1"
+                        className="inline text-fuchsia-400 hover:text-fuchsia-300 ml-1"
                         onClick={(e) => e.stopPropagation()}
                         aria-label="Open Spotify artist"
                       >
@@ -161,22 +161,22 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
 
           <div className="space-y-1.5 text-sm text-neutral-300">
             <div className="flex items-center gap-2">
-              <MapPin size={14} className="text-teal-500 shrink-0" />
+              <MapPin size={14} className="text-fuchsia-500 shrink-0" />
               <span className="truncate">{venue}{stage && ` (${stage})`}</span>
             </div>
             <div className="flex items-center gap-2">
-              <CalendarDays size={14} className="text-teal-500 shrink-0" />
+              <CalendarDays size={14} className="text-fuchsia-500 shrink-0" />
               <span>{formattedDate}</span>
             </div>
             {doorsFormatted && (
               <div className="flex items-center gap-2">
-                <Clock size={14} className="text-teal-500 shrink-0" />
+                <Clock size={14} className="text-fuchsia-500 shrink-0" />
                 <span>Doors {doorsFormatted}</span>
               </div>
             )}
             {price && (
               <div className="flex items-center gap-2">
-                <Ticket size={14} className="text-teal-500 shrink-0" />
+                <Ticket size={14} className="text-fuchsia-500 shrink-0" />
                 <span>
                   {price === "See website" ? (
                     <span className="text-neutral-500">See website for prices</span>
@@ -199,7 +199,7 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
             {copied ? (
               <Check size={14} className="text-green-400" />
             ) : (
-              <Share2 size={16} className="text-teal-400" />
+              <Share2 size={16} className="text-fuchsia-400" />
             )}
           </button>
 
@@ -210,7 +210,7 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
           >
             <Star
               size={16}
-              className={favorited ? "fill-yellow-400 text-yellow-400" : "text-teal-400"}
+              className={favorited ? "fill-yellow-400 text-yellow-400" : "text-fuchsia-400"}
             />
           </button>
 
@@ -219,7 +219,7 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
             href={ticket_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-4 py-2 shrink-0 rounded-lg font-bold text-sm transition-colors bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white whitespace-nowrap"
+            className="flex items-center gap-1.5 px-4 py-2 shrink-0 rounded-lg font-bold text-sm transition-colors bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white whitespace-nowrap"
             onClick={(e) => e.stopPropagation()}
           >
             <Ticket size={14} />

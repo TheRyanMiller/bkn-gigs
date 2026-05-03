@@ -268,7 +268,7 @@ export default function Home({ events, loading, onEventClick }: HomeProps) {
       <div className="flex-1 min-h-0 w-full">
         {loading && (
           <div className="text-center py-20">
-            <Loader2 size={48} className="mx-auto text-teal-500 animate-spin" />
+            <Loader2 size={48} className="mx-auto text-fuchsia-500 animate-spin" />
           </div>
         )}
 

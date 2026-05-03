@@ -5,7 +5,7 @@ const getTodayET = () =>
 
 const longDescription = "A detailed artist biography for this show. ".repeat(30);
 const testImage =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%230f766e'/%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%23a21caf'/%3E%3C/svg%3E";
 
 const expectWithinVisibleArea = async (element: Locator, container: Locator) => {
   const elementBox = await element.boundingBox();

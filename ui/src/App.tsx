@@ -71,7 +71,7 @@ function AppContent() {
   }, []);
 
   return (
-    <div className="bg-neutral-950 text-neutral-200 font-sans selection:bg-teal-500/30 selection:text-teal-200">
+    <div className="bg-neutral-950 text-neutral-200 font-sans selection:bg-fuchsia-500/30 selection:text-fuchsia-200">
       <Header
         status={scrapeStatus}
         onStatusClick={() => setShowStatusModal(true)}
