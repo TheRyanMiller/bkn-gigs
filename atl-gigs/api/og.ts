@@ -1,6 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const SITE_URL = "https://atl-gigs.info";
+const SITE_URL = (process.env.SITE_URL || "https://bkn-gigs.info").replace(/\/$/, "");
+const R2_PUBLIC_BASE_URL = (
+  process.env.R2_PUBLIC_BASE_URL ||
+  "https://pub-756023fa49674586a44105ba7bf52137.r2.dev/apps/bkn-gigs/prod/public"
+).replace(/\/$/, "");
 const DEFAULT_OG_IMAGE = `${SITE_URL}/atlgigs.jpg`;
 
 // User agent patterns for social media crawlers
@@ -94,9 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Fetch events data from R2
-    const eventsResponse = await fetch(
-      "https://pub-756023fa49674586a44105ba7bf52137.r2.dev/events.json"
-    );
+    const eventsResponse = await fetch(`${R2_PUBLIC_BASE_URL}/events.json`);
     if (!eventsResponse.ok) {
       return res.redirect(302, `/?event=${eventSlug}`);
     }
@@ -110,7 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Build event-specific OG data
     const artistName = getHeadliner(event.artists?.[0]?.name || "Event");
-    const venue = event.venue || "Atlanta";
+    const venue = event.venue || "Brooklyn";
     const dateShort = formatDateShort(event.date);
     const dateLong = formatDateLong(event.date);
     const categoryDescriptor = CATEGORY_DESCRIPTORS[event.category] || "live";
@@ -120,7 +122,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : DEFAULT_OG_IMAGE;
 
     const title = `${artistName} @ ${venue} · ${dateShort}`;
-    const description = `${dateLong} · ${artistName} ${categoryDescriptor} @ ${venue}. Get tickets and event details on ATL Gigs.`;
+    const description = `${dateLong} · ${artistName} ${categoryDescriptor} @ ${venue}. Get tickets and event details on BKN Gigs.`;
     const eventUrl = `${SITE_URL}?event=${event.slug}`;
 
     // Return minimal HTML with OG tags for crawlers
@@ -140,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <meta property="og:image" content="${ogImage}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:site_name" content="ATL Gigs" />
+  <meta property="og:site_name" content="BKN Gigs" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />

@@ -3,7 +3,7 @@ name: Scrape Events
 on:
   push:
     branches:
-      - master
+      - main
   schedule:
     # Run daily at 6 AM UTC (1 AM EST / 2 AM EDT)
     - cron: '0 6 * * *'
@@ -36,10 +36,16 @@ jobs:
           source venv/bin/activate
           python scrape.py
         env:
+          APP_SLUG: bkn-gigs
+          APP_ENV: prod
           TM_API_KEY: ${{ secrets.TM_API_KEY }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_BUCKET_URL: ${{ secrets.R2_PUBLIC_BUCKET_URL }}
+          R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
+          R2_SHARE_ARTIST_CACHES: "true"
 
       - name: Check for scraper errors
         id: check_errors
@@ -88,11 +94,11 @@ jobs:
           server_port: 587
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "⚠️ ATL Gigs Scraper Errors - ${{ github.run_id }}"
+          subject: "BKN Gigs Scraper Errors - ${{ github.run_id }}"
           to: ${{ secrets.ALERT_EMAIL }}
-          from: ATL Gigs Scraper <${{ secrets.SMTP_USERNAME }}>
+          from: BKN Gigs Scraper <${{ secrets.SMTP_USERNAME }}>
           body: |
-            The ATL Gigs scraper encountered errors during the latest run.
+            The BKN Gigs scraper encountered errors during the latest run.
 
             ${{ steps.check_errors.outputs.error_summary }}
 
@@ -106,3 +112,4 @@ jobs:
             echo "- **Total events:** $EVENT_COUNT" >> $GITHUB_STEP_SUMMARY
           fi
           echo "- **Data uploaded to:** Cloudflare R2" >> $GITHUB_STEP_SUMMARY
+          echo "- **R2 namespace:** apps/bkn-gigs/prod" >> $GITHUB_STEP_SUMMARY

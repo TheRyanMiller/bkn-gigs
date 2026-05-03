@@ -71,11 +71,12 @@ def upload_to_r2(log_func=None):
                     )
                 uploaded.append(key)
 
-        put(config.OUTPUT_PATH, "events.json", "application/json")
-        put(config.STATUS_PATH, "scrape-status.json", "application/json")
-        put(config.SEEN_CACHE_PATH, "seen-cache.json", "application/json")
-        put(config.ARTIST_CACHE_PATH, "artist-cache.json", "application/json")
-        put(config.SPOTIFY_CACHE_PATH, "artist-spotify-cache.json", "application/json")
+        put(config.OUTPUT_PATH, config.R2_EVENTS_KEY, "application/json")
+        put(config.STATUS_PATH, config.R2_STATUS_KEY, "application/json")
+        put(config.SEEN_CACHE_PATH, config.R2_SEEN_CACHE_KEY, "application/json")
+        put(config.LOG_PATH, config.R2_LOG_KEY, "text/plain; charset=utf-8")
+        put(config.ARTIST_CACHE_PATH, config.R2_ARTIST_CACHE_KEY, "application/json")
+        put(config.SPOTIFY_CACHE_PATH, config.R2_SPOTIFY_CACHE_KEY, "application/json")
 
         log(f"Uploaded to R2: {', '.join(uploaded)}")
         return True

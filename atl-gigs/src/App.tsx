@@ -8,6 +8,10 @@ import ScrapeStatusModal from "./components/ScrapeStatusModal";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { Event, ScrapeStatus } from "./types";
 
+const R2_BASE_URL =
+  import.meta.env.VITE_R2_PUBLIC_BASE_URL ||
+  "https://pub-756023fa49674586a44105ba7bf52137.r2.dev/apps/bkn-gigs/prod/public";
+
 function AppContent() {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -33,9 +37,6 @@ function AppContent() {
   }, [setSearchParams]);
 
   useEffect(() => {
-    // R2 public URL for event data (used in both dev and prod)
-    const R2_BASE_URL = "https://pub-756023fa49674586a44105ba7bf52137.r2.dev";
-
     // Fetch status first to get last_run timestamp for cache-busting events
     const STATUS_URL = `${R2_BASE_URL}/scrape-status.json?v=${Date.now()}`;
 

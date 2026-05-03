@@ -38,7 +38,7 @@ def load_existing_events():
     This preserves past events that we've already scraped.
     Returns list of events.
     """
-    download_from_r2("events.json", config.OUTPUT_PATH)
+    download_from_r2(config.R2_EVENTS_KEY, config.OUTPUT_PATH)
 
     try:
         if config.OUTPUT_PATH.exists():
@@ -51,7 +51,7 @@ def load_existing_events():
 
 def load_seen_cache():
     """Load the seen events cache (download from R2 first if available)."""
-    download_from_r2("seen-cache.json", config.SEEN_CACHE_PATH)
+    download_from_r2(config.R2_SEEN_CACHE_KEY, config.SEEN_CACHE_PATH)
 
     try:
         if config.SEEN_CACHE_PATH.exists():
@@ -71,7 +71,7 @@ def save_seen_cache(cache):
 
 def load_existing_status():
     """Load existing scrape status file if available."""
-    download_from_r2("scrape-status.json", config.STATUS_PATH)
+    download_from_r2(config.R2_STATUS_KEY, config.STATUS_PATH)
 
     try:
         if config.STATUS_PATH.exists():

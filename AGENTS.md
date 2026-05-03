@@ -39,6 +39,37 @@ When implementing Brooklyn changes, start with these files in `../atl-music`:
 - `scrapers/*.md` - documentation style for venue scrapers.
 - `atl-gigs/src/types.ts` and `atl-gigs/api/og.ts` - frontend category and OG metadata behavior.
 
+## Shared Data Store
+
+BKN Gigs uses the same Cloudflare R2 store as ATL Gigs, but all app-specific files must be namespaced. Never add new flat root R2 keys.
+
+Brooklyn app data:
+
+```text
+apps/bkn-gigs/prod/public/events.json
+apps/bkn-gigs/prod/public/scrape-status.json
+apps/bkn-gigs/prod/state/seen-cache.json
+apps/bkn-gigs/prod/state/scrape-log.txt
+```
+
+Shared enrichment caches:
+
+```text
+shared/artist-cache.json
+shared/artist-spotify-cache.json
+```
+
+Use the key constants in `scraper/config.py` instead of string literals:
+
+- `config.R2_EVENTS_KEY`
+- `config.R2_STATUS_KEY`
+- `config.R2_SEEN_CACHE_KEY`
+- `config.R2_LOG_KEY`
+- `config.R2_ARTIST_CACHE_KEY`
+- `config.R2_SPOTIFY_CACHE_KEY`
+
+The frontend and OG API should read from `R2_PUBLIC_BASE_URL`/`VITE_R2_PUBLIC_BASE_URL`, which should point at `.../apps/bkn-gigs/prod/public`.
+
 ## Event Schema
 
 Every scraper must return events matching this structure:

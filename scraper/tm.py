@@ -58,7 +58,7 @@ def load_artist_cache():
     global _artist_classification_cache
     from scraper.pipeline.r2 import download_from_r2
 
-    download_from_r2("artist-cache.json", config.ARTIST_CACHE_PATH)
+    download_from_r2(config.R2_ARTIST_CACHE_KEY, config.ARTIST_CACHE_PATH)
 
     try:
         if config.ARTIST_CACHE_PATH.exists():

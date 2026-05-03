@@ -9,6 +9,43 @@ This repository is a sibling fork of ATL Gigs, copied from `/Users/wavey/code/at
 - Replace Atlanta venue coverage with Brooklyn venue coverage.
 - Keep scraper docs complete so future venue maintenance is straightforward.
 
+## Shared Data Store Layout
+
+BKN Gigs should use the same Cloudflare R2 data store as ATL Gigs without sharing app-specific files. The Brooklyn app owns an app-scoped namespace:
+
+```text
+apps/
+  bkn-gigs/
+    prod/
+      public/
+        events.json
+        scrape-status.json
+      state/
+        seen-cache.json
+        scrape-log.txt
+shared/
+  artist-cache.json
+  artist-spotify-cache.json
+```
+
+Isolation rules:
+
+- Public app data lives under `apps/bkn-gigs/prod/public/`.
+- Brooklyn-only scrape state lives under `apps/bkn-gigs/prod/state/`.
+- Do not read or write flat root keys such as `events.json` or `seen-cache.json`.
+- Do not read or write ATL app keys such as `apps/atl-gigs/prod/public/events.json`.
+- `artist-cache.json` and `artist-spotify-cache.json` may be shared under `shared/` because they are artist enrichment caches, not event history. Set `R2_SHARE_ARTIST_CACHES=false` to keep those under the BKN app state namespace instead.
+
+Current implementation defaults:
+
+- `APP_SLUG=bkn-gigs`
+- `APP_ENV=prod`
+- `R2_KEY_PREFIX=apps/bkn-gigs/prod`
+- `R2_PUBLIC_BASE_URL=https://pub-756023fa49674586a44105ba7bf52137.r2.dev/apps/bkn-gigs/prod/public`
+- `R2_BUCKET_NAME=atl-gigs-data` for compatibility with the existing store. This can be changed to a neutral bucket name later with an environment variable.
+
+ATL Gigs still uses flat root keys in its current implementation. If ATL is migrated later, use `apps/atl-gigs/prod/...` for its app data and keep only enrichment caches in `shared/`.
+
 ## Initial Venue List
 
 Primary seed venues:

@@ -33,7 +33,7 @@ SPOTIFY_SEARCH_SOURCE_VERSION = "v3"
 def load_spotify_cache():
     """Load Spotify link cache (download from R2 first if available)."""
     global _artist_spotify_cache, _spotify_cache_loaded
-    download_from_r2("artist-spotify-cache.json", config.SPOTIFY_CACHE_PATH)
+    download_from_r2(config.R2_SPOTIFY_CACHE_KEY, config.SPOTIFY_CACHE_PATH)
 
     try:
         if config.SPOTIFY_CACHE_PATH.exists():

@@ -19,7 +19,7 @@ from scraper.pipeline.io import (
 )
 from scraper.pipeline.merge import merge_events, update_first_seen, prune_seen_cache
 from scraper.pipeline.metrics import VenueMetrics
-from scraper.pipeline.r2 import upload_to_r2
+from scraper.pipeline.r2 import download_from_r2, upload_to_r2
 from scraper.pipeline.validate import validate_event
 from scraper.registry import get_scrapers
 from scraper.tm import load_artist_cache, save_artist_cache, enrich_events_with_tm
@@ -211,22 +211,21 @@ def main():
         json.dump(status_data, f, indent=2)
     log(f"Status saved to {config.STATUS_PATH}")
 
+    # Save log file before upload so the app-scoped state copy is refreshed.
+    download_from_r2(config.R2_LOG_KEY, config.LOG_PATH)
+    existing_log = trim_log_by_time(config.LOG_PATH, retention_days=14)
+    log_content = existing_log + ["\n--- New Run ---\n"] + [line + "\n" for line in log_lines]
+
+    with open(config.LOG_PATH, "w") as f:
+        f.writelines(log_content)
+    log(f"Log saved to {config.LOG_PATH}")
+
     # Upload to R2 (Cloudflare object storage)
     log("\nUploading to R2...")
     if upload_to_r2(log_func=log):
         log(f"Data available at: {config.R2_PUBLIC_URL}/events.json")
     else:
         log("R2 upload failed or skipped - files only saved locally", "WARNING")
-
-    # Save log file (time-based retention: 14 days)
-    existing_log = trim_log_by_time(config.LOG_PATH, retention_days=14)
-
-    # Add separator and new log entries
-    log_content = existing_log + ["\n--- New Run ---\n"] + [line + "\n" for line in log_lines]
-
-    with open(config.LOG_PATH, "w") as f:
-        f.writelines(log_content)
-    log(f"Log saved to {config.LOG_PATH}")
 
 
 if __name__ == "__main__":
