@@ -45,6 +45,8 @@ When recreating the app for Brooklyn, use these ATL files as references:
 - `../atl-music/atl-gigs/api/` - Vercel OG endpoints.
 - `../atl-music/.github/workflows/scrape.yml` - scheduled scrape automation.
 
+When the Brooklyn frontend is created, place it under `ui/`.
+
 ## Future Event Schema
 
 When implementation begins, every Brooklyn scraper should return events matching the ATL schema:
@@ -147,5 +149,5 @@ When the user asks to build the app:
 1. Recreate the project structure deliberately from ATL patterns.
 2. Start with scraper source discovery and venue docs before code.
 3. Prefer source-specific reusable scrapers over one-off HTML parsing.
-4. Add frontend files only after the scraper/pipeline shape is clear.
+4. Add frontend files under `ui/` only after the scraper/pipeline shape is clear.
 5. Keep Brooklyn-specific naming, data paths, and venue docs from the beginning.

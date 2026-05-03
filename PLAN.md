@@ -16,6 +16,7 @@ The goal is to recreate the ATL Gigs concept for Brooklyn venues, not to keep a 
 - Tracked planning files should be limited to `AGENTS.md` and `PLAN.md`.
 - Use `../atl-music` as the reference implementation when the rebuild starts.
 - Do not copy ATL source wholesale into this repo unless explicitly requested.
+- When frontend work begins, create it under `ui/`.
 
 ## Product Goal
 
@@ -144,6 +145,7 @@ Each scraper must have `scrapers/{venue-slug}.md` documentation.
 
 After scraper output is stable, recreate the frontend deliberately:
 
+- Create the frontend folder as `ui/`.
 - Use ATL Gigs frontend behavior as a reference.
 - Use Brooklyn naming and metadata from the start.
 - Read data from `apps/bkn-gigs/prod/public/events.json`.
@@ -165,6 +167,5 @@ Reference from ATL:
 
 ## Open Decisions
 
-- Final frontend folder name: likely `bkn-gigs/`, but decide when implementation begins.
 - Final public domain and Vercel project name.
 - Whether ATL should also migrate from flat R2 root keys to `apps/atl-gigs/prod/`.
