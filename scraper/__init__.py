@@ -1,0 +1,2 @@
+"""Brooklyn event scraper package."""
+
