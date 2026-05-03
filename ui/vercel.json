@@ -1,20 +1,9 @@
 {
-  "cleanUrls": true,
-  "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ],
+  "framework": "vite",
   "rewrites": [
     {
-      "source": "/event/:slug",
-      "destination": "/"
+      "source": "/e/:slug",
+      "destination": "/api/og?event=:slug"
     }
   ]
 }

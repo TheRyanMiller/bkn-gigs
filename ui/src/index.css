@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  background-color: #0a0a0a;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0a0a0a;
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  background-color: #0a0a0a;
+}
+
+/* Selection color */
+::selection {
+  background-color: rgba(20, 184, 166, 0.3);
+  color: rgb(204, 251, 241);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar on virtualized list */
+[style*="overflow: auto"],
+[style*="overflow:auto"] {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+[style*="overflow: auto"]::-webkit-scrollbar,
+[style*="overflow:auto"]::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom date input styling for dark mode */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.8;
+}

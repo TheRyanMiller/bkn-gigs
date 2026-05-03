@@ -1,65 +1,166 @@
-export const config = {
-  runtime: "edge",
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+
+const SITE_URL = "https://bkn-gigs.info";
+const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og-image`;
+const EVENTS_URL = "https://pub-756023fa49674586a44105ba7bf52137.r2.dev/apps/bkn-gigs/prod/public/events.json";
+
+// User agent patterns for social media crawlers
+const CRAWLER_PATTERNS = [
+  "facebookexternalhit",
+  "Facebot",
+  "Twitterbot",
+  "LinkedInBot",
+  "Slackbot",
+  "TelegramBot",
+  "WhatsApp",
+  "Discordbot",
+  "Applebot",
+  "Pinterest",
+  "Embedly",
+  "Quora",
+  "vkShare",
+  "Slack-ImgProxy",
+];
+
+function isCrawler(userAgent: string | null): boolean {
+  if (!userAgent) return false;
+  const ua = userAgent.toLowerCase();
+  return CRAWLER_PATTERNS.some((pattern) => ua.includes(pattern.toLowerCase()));
+}
+
+function formatDateLong(dateStr: string): string {
+  try {
+    const date = new Date(dateStr + "T12:00:00");
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatDateShort(dateStr: string): string {
+  try {
+    const date = new Date(dateStr + "T12:00:00");
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Extract headliner from artist name
+function getHeadliner(artistName: string): string {
+  const separators = [",", " & ", " and ", " with ", " featuring ", " feat. ", " ft. "];
+  for (const sep of separators) {
+    if (artistName.includes(sep)) {
+      return artistName.split(sep)[0].trim();
+    }
+  }
+  return artistName;
+}
+
+// Category labels for descriptions
+const CATEGORY_DESCRIPTORS: Record<string, string> = {
+  concerts: "live",
+  comedy: "comedy",
+  broadway: "theater",
+  sports: "game",
+  misc: "event",
 };
 
-const R2_PUBLIC_URL = "https://pub-756023fa49674586a44105ba7bf52137.r2.dev";
-const R2_PUBLIC_PREFIX = "apps/bkn-gigs/prod/public";
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const eventSlug = req.query.event as string;
+  const userAgent = req.headers["user-agent"] || "";
 
-function escapeXml(value: string) {
-  return value.replace(/[<>&"']/g, (char) => {
-    switch (char) {
-      case "<":
-        return "&lt;";
-      case ">":
-        return "&gt;";
-      case "&":
-        return "&amp;";
-      case "\"":
-        return "&quot;";
-      default:
-        return "&#39;";
-    }
-  });
-}
-
-async function eventTitle(slug: string | null) {
-  if (!slug) {
-    return "BKN Gigs";
+  // If not a crawler, redirect to the main app with query param
+  if (!isCrawler(userAgent)) {
+    return res.redirect(302, `${SITE_URL}/?event=${eventSlug}`);
   }
+
   try {
-    const response = await fetch(`${R2_PUBLIC_URL}/${R2_PUBLIC_PREFIX}/events.json`, { cache: "no-store" });
-    if (!response.ok) {
-      return "BKN Gigs";
+    // Fetch events data from R2
+    const eventsResponse = await fetch(EVENTS_URL);
+    if (!eventsResponse.ok) {
+      return res.redirect(302, `/?event=${eventSlug}`);
     }
-    const events = (await response.json()) as Array<{ slug?: string; artists?: Array<{ name: string }>; venue?: string }>;
-    const event = events.find((item) => item.slug === slug);
-    if (!event) {
-      return "BKN Gigs";
-    }
-    const artists = event.artists?.map((artist) => artist.name).join(" + ");
-    return [artists, event.venue].filter(Boolean).join(" at ");
-  } catch {
-    return "BKN Gigs";
-  }
-}
 
-export default async function handler(request: Request) {
-  const url = new URL(request.url);
-  const title = escapeXml(await eventTitle(url.searchParams.get("event")));
-  const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#f6f1e9"/>
-  <rect x="64" y="64" width="1072" height="502" rx="8" fill="#ffffff" stroke="#1d2026" stroke-opacity=".16"/>
-  <text x="96" y="160" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" fill="#a53f2b">Brooklyn</text>
-  <text x="96" y="278" font-family="Inter, Arial, sans-serif" font-size="84" font-weight="900" fill="#12151a">BKN Gigs</text>
-  <foreignObject x="96" y="330" width="1008" height="140">
-    <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Inter,Arial,sans-serif;font-size:44px;font-weight:800;line-height:1.12;color:#164f46;">${title}</div>
-  </foreignObject>
-</svg>`;
-  return new Response(svg, {
-    headers: {
-      "Content-Type": "image/svg+xml",
-      "Cache-Control": "public, max-age=300",
-    },
-  });
+    const events = await eventsResponse.json();
+    const event = events.find((e: any) => e.slug === eventSlug);
+
+    if (!event) {
+      return res.redirect(302, `/?event=${eventSlug}`);
+    }
+
+    // Build event-specific OG data
+    const artistName = getHeadliner(event.artists?.[0]?.name || "Event");
+    const venue = event.venue || "Brooklyn";
+    const dateShort = formatDateShort(event.date);
+    const dateLong = formatDateLong(event.date);
+    const categoryDescriptor = CATEGORY_DESCRIPTORS[event.category] || "live";
+    // Generate dynamic OG image with overlay, fallback to default
+    const ogImage = event.image_url
+      ? `${SITE_URL}/api/og-image?image=${encodeURIComponent(event.image_url)}&date=${event.date}`
+      : DEFAULT_OG_IMAGE;
+
+    const title = `${artistName} @ ${venue} · ${dateShort}`;
+    const description = `${dateLong} · ${artistName} ${categoryDescriptor} @ ${venue}. Get tickets and event details on BKN Gigs.`;
+    const eventUrl = `${SITE_URL}?event=${event.slug}`;
+
+    // Return minimal HTML with OG tags for crawlers
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="${eventUrl}" />
+  <meta property="og:title" content="${escapeHtml(title)}" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
+  <meta property="og:image" content="${ogImage}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="BKN Gigs" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="${eventUrl}" />
+  <meta name="twitter:title" content="${escapeHtml(title)}" />
+  <meta name="twitter:description" content="${escapeHtml(description)}" />
+  <meta name="twitter:image" content="${ogImage}" />
+
+  <!-- Redirect browsers to main app -->
+  <meta http-equiv="refresh" content="0;url=${SITE_URL}/?event=${event.slug}" />
+</head>
+<body>
+  <p>Redirecting to <a href="${SITE_URL}/?event=${event.slug}">${escapeHtml(title)}</a>...</p>
+</body>
+</html>`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    return res.status(200).send(html);
+  } catch (error) {
+    console.error("OG handler error:", error);
+    return res.redirect(302, `/?event=${eventSlug}`);
+  }
 }
