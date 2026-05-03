@@ -1,0 +1,9 @@
+{
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/e/:slug",
+      "destination": "/api/og?event=:slug"
+    }
+  ]
+}

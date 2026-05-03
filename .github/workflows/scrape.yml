@@ -1,0 +1,108 @@
+name: Scrape Events
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    # Run daily at 6 AM UTC (1 AM EST / 2 AM EDT)
+    - cron: '0 6 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run scraper (uploads to R2)
+        id: scraper
+        run: |
+          source venv/bin/activate
+          python scrape.py
+        env:
+          TM_API_KEY: ${{ secrets.TM_API_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+
+      - name: Check for scraper errors
+        id: check_errors
+        run: |
+          if [ -f atl-gigs/public/events/scrape-status.json ]; then
+            ALL_SUCCESS=$(python3 -c "import json; print(json.load(open('atl-gigs/public/events/scrape-status.json'))['all_success'])")
+            if [ "$ALL_SUCCESS" = "False" ]; then
+              echo "has_errors=true" >> $GITHUB_OUTPUT
+
+              # Extract failed venues summary
+              python3 -c "
+          import json
+          status = json.load(open('atl-gigs/public/events/scrape-status.json'))
+          failed = [name for name, v in status['venues'].items() if not v['success']]
+          print('FAILED VENUES: ' + ', '.join(failed))
+          print()
+          for name in failed:
+              err = status['venues'][name].get('error', 'Unknown error')
+              print(f'  {name}: {err}')
+          " > /tmp/error_summary.txt
+
+              # Extract latest run logs (after last "--- New Run ---")
+              if [ -f atl-gigs/public/events/scrape-log.txt ]; then
+                echo "" >> /tmp/error_summary.txt
+                echo "============================================================" >> /tmp/error_summary.txt
+                echo "FULL SCRAPE LOG" >> /tmp/error_summary.txt
+                echo "============================================================" >> /tmp/error_summary.txt
+                # Get content after the last "--- New Run ---" marker
+                tac atl-gigs/public/events/scrape-log.txt | sed '/--- New Run ---/q' | tac >> /tmp/error_summary.txt
+              fi
+
+              cat /tmp/error_summary.txt
+              echo "error_summary<<EOF" >> $GITHUB_OUTPUT
+              cat /tmp/error_summary.txt >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            else
+              echo "has_errors=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Send error notification email
+        if: steps.check_errors.outputs.has_errors == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "⚠️ ATL Gigs Scraper Errors - ${{ github.run_id }}"
+          to: ${{ secrets.ALERT_EMAIL }}
+          from: ATL Gigs Scraper <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            The ATL Gigs scraper encountered errors during the latest run.
+
+            ${{ steps.check_errors.outputs.error_summary }}
+
+            View the full run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Show scrape summary
+        run: |
+          echo "## Scrape Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f atl-gigs/public/events/events.json ]; then
+            EVENT_COUNT=$(python3 -c "import json; print(len(json.load(open('atl-gigs/public/events/events.json'))))")
+            echo "- **Total events:** $EVENT_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **Data uploaded to:** Cloudflare R2" >> $GITHUB_STEP_SUMMARY
