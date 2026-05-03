@@ -12,6 +12,7 @@ ui/node_modules/
 ui/dist/
 ui/.vite/
 ui/coverage/
+ui/*.tsbuildinfo
 
 ui/public/events/*.json
 ui/public/events/scrape-log.txt
