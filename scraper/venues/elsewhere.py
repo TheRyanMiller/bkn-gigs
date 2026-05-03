@@ -67,6 +67,15 @@ def _time(value: Any, timezone: str | None = None) -> str | None:
     return normalize_time(text)
 
 
+def _price(value: Any) -> str | None:
+    if isinstance(value, (int, float)):
+        if value <= 0:
+            return None
+        amount = value / 100 if value > 100 else value
+        return f"${amount:.2f}".replace(".00", "")
+    return value
+
+
 def scrape_elsewhere() -> list[dict]:
     session = make_session()
     events: list[dict] = []
@@ -90,7 +99,7 @@ def scrape_elsewhere() -> list[dict]:
                 info_url=(f"{BASE_URL}/events/{raw.get('slug')}" if raw.get("slug") else raw.get("url")),
                 image_url=_image_url(raw),
                 description=raw.get("description"),
-                price=raw.get("representative_ticket_price"),
+                price=_price(raw.get("representative_ticket_price")),
                 category=detect_category_from_text(text, default="concerts"),
             )
             if event:
@@ -99,4 +108,3 @@ def scrape_elsewhere() -> list[dict]:
             break
         page += 1
     return events
-

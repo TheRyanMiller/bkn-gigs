@@ -38,6 +38,12 @@ function formatDate(value: string) {
   }).format(new Date(`${value}T12:00:00`));
 }
 
+function dateParts(value: string) {
+  const formatted = formatDate(value).replace(",", "");
+  const [weekday, month, day] = formatted.split(" ");
+  return { weekday, date: [month, day].filter(Boolean).join(" ") };
+}
+
 function formatTime(value: string | null) {
   if (!value) {
     return null;
@@ -73,11 +79,12 @@ function EventCard({
   onShare: (event: GigEvent) => void;
 }) {
   const time = formatTime(event.show_time) || formatTime(event.doors_time);
+  const parts = dateParts(event.date);
   return (
     <article className="event-card">
       <div className="event-date" aria-label={event.date}>
-        <span>{formatDate(event.date).split(" ")[0]}</span>
-        <strong>{formatDate(event.date).replace(/^\w+ /, "")}</strong>
+        <span>{parts.weekday}</span>
+        <strong>{parts.date}</strong>
       </div>
       <div className="event-main">
         <button className="event-title" type="button" onClick={() => onOpen(event)}>

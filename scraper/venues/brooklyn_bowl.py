@@ -47,6 +47,14 @@ def _parse_item(html: str, day: str) -> dict | None:
     title = clean_text(title_node.get_text(" ", strip=True)) if title_node else None
     if not title:
         return None
+    title_lower = title.lower()
+    if (
+        title_lower.startswith("closed")
+        or "closed for a private event" in title_lower
+        or "full venue closed" in title_lower
+        or "gift card" in title_lower
+    ):
+        return None
 
     support = clean_text((item.select_one(".support, h4, .event-support") or BeautifulSoup("", "html.parser")).get_text(" ", strip=True))
     link_node = item.select_one("a[href*='/brooklyn/events/'], a[href*='/event/'], a[href]")
@@ -99,4 +107,3 @@ def scrape_brooklyn_bowl(*, months: int = 8) -> list[dict]:
                 seen.add(key)
                 events.append(event)
     return events
-

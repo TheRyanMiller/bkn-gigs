@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import re
 
 from bs4 import BeautifulSoup
@@ -13,7 +14,7 @@ def clean_text(value: str | None) -> str | None:
         text = soup.get_text(" ", strip=True)
     else:
         text = value
-    text = re.sub(r"\s+", " ", text).strip()
+    text = html.unescape(re.sub(r"\s+", " ", text).strip())
     return text or None
 
 
