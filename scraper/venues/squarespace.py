@@ -20,6 +20,8 @@ def _label_time(text: str, label: str) -> str | None:
 
 def _items(payload: Any) -> list[dict[str, Any]]:
     if isinstance(payload, dict):
+        if isinstance(payload.get("upcoming"), list):
+            return payload["upcoming"]
         if isinstance(payload.get("items"), list):
             return payload["items"]
         collection = payload.get("collection")
@@ -55,4 +57,3 @@ def scrape_brooklyn_comedy_collective() -> list[dict]:
         if event:
             events.append(event)
     return events
-

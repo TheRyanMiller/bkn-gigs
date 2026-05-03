@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
-from urllib.parse import urljoin
+
+import requests
 
 from scraper.http import get_json, make_session
 from scraper.utils.categories import detect_category_from_text
@@ -11,10 +13,11 @@ from scraper.utils.descriptions import clean_text
 from scraper.utils.events import build_event, make_artists, normalize_price
 
 BASE_URL = "https://partners-endpoint.dice.fm/api/v2/events"
+log = logging.getLogger(__name__)
 
 
-def _params(venue_filters: list[str] | None, promoter_filters: list[str] | None) -> list[tuple[str, str]]:
-    params = [("page[size]", "24"), ("types", "linkout,event")]
+def _params(venue_filters: list[str] | None, promoter_filters: list[str] | None, page: int) -> list[tuple[str, str]]:
+    params = [("page[size]", "24"), ("page[number]", str(page)), ("types", "linkout,event")]
     for venue in venue_filters or []:
         params.append(("filter[venues][]", venue))
     for promoter in promoter_filters or []:
@@ -100,15 +103,14 @@ def scrape_dice_events(
 ) -> list[dict]:
     session = make_session()
     headers = {"x-api-key": api_key, "Accept": "application/json"}
-    url: str | None = BASE_URL
-    params: list[tuple[str, str]] | None = _params(venue_filters, promoter_filters)
     events: list[dict] = []
-    pages = 0
 
-    while url and pages < max_pages:
-        payload = get_json(url, session=session, headers=headers, params=params)
-        params = None
-        pages += 1
+    for page in range(1, max_pages + 1):
+        try:
+            payload = get_json(BASE_URL, session=session, headers=headers, params=_params(venue_filters, promoter_filters, page))
+        except requests.HTTPError as exc:
+            log.warning("DICE request failed for %s page %s: %s", venue_name, page, exc)
+            break
         raw_events = payload.get("data") if isinstance(payload, dict) else []
         if not raw_events:
             break
@@ -134,9 +136,7 @@ def scrape_dice_events(
             if event:
                 events.append(event)
 
-        links = payload.get("links") if isinstance(payload, dict) else {}
-        next_url = links.get("next") if isinstance(links, dict) else None
-        url = urljoin(BASE_URL, next_url) if next_url else None
+        if len(raw_events) < 24:
+            break
 
     return events
-

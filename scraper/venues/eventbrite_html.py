@@ -21,22 +21,27 @@ def _label_time(text: str, label: str) -> str | None:
 def scrape_littlefield() -> list[dict]:
     session = make_session()
     soup = BeautifulSoup(get_text(LITTLEFIELD_URL, session=session), "html.parser")
-    items = soup.select("article, .wfea_event, .event, li")
+    items = soup.select("article.wfea-venue__event, article, .wfea_event, .event, li")
     events: list[dict] = []
     seen: set[str] = set()
     for item in items:
         time_node = item.select_one("time[datetime]")
-        title_node = item.select_one("h2 a, h3 a, .entry-title a, a[href*='wfea_eb_id']")
+        title_node = item.select_one("h2 a, h3 a, .entry-title a")
+        ticket_node = item.select_one("a[href*='wfea_eb_id'], a[href*='eventbrite']")
         if not time_node or not title_node:
             continue
-        title = clean_text(title_node.get_text(" ", strip=True))
+        image_node = item.select_one("img")
+        title = (
+            clean_text(title_node.get_text(" ", strip=True))
+            or clean_text(title_node.get("title"))
+            or clean_text(image_node.get("alt") if image_node else None)
+        )
         start = time_node.get("datetime")
-        ticket_url = absolute_url(title_node.get("href"), "https://littlefieldnyc.com")
+        ticket_url = absolute_url((ticket_node or title_node).get("href"), "https://littlefieldnyc.com")
         if not title or not ticket_url or ticket_url in seen:
             continue
         seen.add(ticket_url)
         text = clean_text(item.get_text(" ", strip=True)) or ""
-        image_node = item.select_one("img")
         image_url = absolute_url((image_node.get("data-src") or image_node.get("src")) if image_node else None, "https://littlefieldnyc.com")
         event = build_event(
             venue="Littlefield",
@@ -54,4 +59,3 @@ def scrape_littlefield() -> list[dict]:
         if event:
             events.append(event)
     return events
-

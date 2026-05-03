@@ -8,8 +8,11 @@ from bs4 import BeautifulSoup
 def clean_text(value: str | None) -> str | None:
     if not value:
         return None
-    soup = BeautifulSoup(value, "html.parser")
-    text = soup.get_text(" ", strip=True)
+    if "<" in value or ">" in value:
+        soup = BeautifulSoup(value, "html.parser")
+        text = soup.get_text(" ", strip=True)
+    else:
+        text = value
     text = re.sub(r"\s+", " ", text).strip()
     return text or None
 
