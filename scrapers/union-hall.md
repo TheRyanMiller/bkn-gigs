@@ -2,7 +2,7 @@
 
 ## Scraping approach
 
-Union Hall's Spacecrafted page renders a large event collection in HTML. The scraper parses collection items, Eventbrite links, dates, titles, and images.
+Union Hall publishes its full schedule through its official Eventbrite organizer profile. The scraper paginates the profile's JSON event feed and reads dates, times, titles, prices, links, and images.
 
 ## Category mappings
 
@@ -10,8 +10,8 @@ Comedy is the default because Union Hall's calendar is comedy-forward. Shared de
 
 ## Edge cases
 
-Many links point directly to Eventbrite. The scraper keeps those as ticket URLs and preserves the Union Hall event link as info when available.
+Cancelled and online-only listings are skipped. Eventbrite links are used for both ticket and info URLs.
 
 ## Opinionated decisions
 
-HTML parsing is used here because the rendered collection contains enough event data and avoids relying on homepage feature blocks.
+The organizer feed is used because Union Hall's website currently serves a TLS certificate chain that Python clients cannot validate reliably.

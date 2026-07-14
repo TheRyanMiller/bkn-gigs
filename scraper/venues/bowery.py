@@ -8,7 +8,8 @@ from scraper.utils.dates import event_date, event_time
 from scraper.utils.descriptions import clean_text
 from scraper.utils.events import absolute_url, build_event, make_artists
 
-BASE_URL = "https://www.bowerypresents.com"
+PUBLIC_BASE_URL = "https://www.bowerypresents.com"
+SOURCE_BASE_URL = "https://origin.bowerypresents.com"
 
 
 def _text(node) -> str | None:
@@ -45,8 +46,8 @@ def _parse_items(html: str, venue_name: str) -> list[dict]:
 
         ticket_node = item.select_one("a[href*='axs.com'], a[href*='ticket'], a.button, a.btn")
         info_node = item.select_one("a[href*='/events/'], a[href*='/shows/']")
-        ticket_url = absolute_url(_first_attr(ticket_node, "href"), BASE_URL)
-        info_url = absolute_url(_first_attr(info_node, "href"), BASE_URL) or ticket_url
+        ticket_url = absolute_url(_first_attr(ticket_node, "href"), PUBLIC_BASE_URL)
+        info_url = absolute_url(_first_attr(info_node, "href"), PUBLIC_BASE_URL) or ticket_url
 
         support_text = _text(item.select_one(".supporting-acts, .support, .event-support"))
         support_names: list[str | None] = []
@@ -55,7 +56,7 @@ def _parse_items(html: str, venue_name: str) -> list[dict]:
             support_names = [part.strip() for part in support_text.replace(" + ", ",").split(",")]
 
         image_node = item.select_one("img")
-        image_url = absolute_url(_first_attr(image_node, "data-src", "src"), BASE_URL)
+        image_url = absolute_url(_first_attr(image_node, "data-src", "src"), SOURCE_BASE_URL)
         description = _text(item.select_one(".description, .event-description")) or support_text
         artists = make_artists([title, *support_names])
         category = detect_category_from_text(title, support_text, default="concerts")
@@ -80,12 +81,12 @@ def _parse_items(html: str, venue_name: str) -> list[dict]:
 
 def scrape_bowery_venue(venue_name: str, venue_slug: str, *, max_pages: int = 12) -> list[dict]:
     session = make_session()
-    page_url = f"{BASE_URL}/venues/{venue_slug}"
+    page_url = f"{SOURCE_BASE_URL}/venues/{venue_slug}"
     events = _parse_items(get_text(page_url, session=session), venue_name)
     seen = {event.get("info_url") or event.get("ticket_url") for event in events}
 
     for page in range(1, max_pages + 1):
-        url = f"{BASE_URL}/info/events/get"
+        url = f"{SOURCE_BASE_URL}/info/events/get"
         response = session.get(
             url,
             params={"scope": "announced", "page": page, "rows": 10, "venues": venue_slug},
@@ -111,4 +112,3 @@ def scrape_bowery_venue(venue_name: str, venue_slug: str, *, max_pages: int = 12
             break
 
     return events
-

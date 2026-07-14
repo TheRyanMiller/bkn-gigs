@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import logging
-
-import requests
 from bs4 import BeautifulSoup
 
 from scraper.http import get_text, make_session
@@ -11,50 +8,64 @@ from scraper.utils.dates import event_date, event_time
 from scraper.utils.descriptions import clean_text
 from scraper.utils.events import absolute_url, build_event, make_artists
 
-log = logging.getLogger(__name__)
+SONGKICK_BASE_URL = "https://www.songkick.com"
+BABYS_CALENDAR_URL = f"{SONGKICK_BASE_URL}/venues/2445014-babys-all-right/calendar"
 
-BABYS_URL = "https://wl.eventim.us/BabysAllRightBrooklyn"
 
-
-def scrape_babys_all_right() -> list[dict]:
-    session = make_session()
-    try:
-        html = get_text(BABYS_URL, session=session, headers={"Accept": "text/html"})
-    except requests.HTTPError as exc:
-        log.warning("Baby's All Right See Tickets page blocked or unavailable: %s", exc)
-        return []
-
+def _parse_songkick_page(html: str) -> tuple[list[dict], str | None]:
     soup = BeautifulSoup(html, "html.parser")
-    items = soup.select("[data-event-id], .event, article, li")
     events: list[dict] = []
-    seen: set[str] = set()
-    for item in items:
-        title_node = item.select_one("h2, h3, .event-title, a[href*='event']")
-        time_node = item.select_one("time[datetime], [datetime], [data-start-date]")
-        ticket_node = item.select_one("a[href*='eventim'], a[href*='ticket'], a[href]")
-        title = clean_text(title_node.get_text(" ", strip=True)) if title_node else None
-        start = (time_node.get("datetime") or time_node.get("data-start-date")) if time_node else None
-        ticket_url = absolute_url(ticket_node.get("href") if ticket_node else None, BABYS_URL)
-        if not title or not start or not ticket_url or ticket_url in seen:
+
+    for item in soup.select("#event-listings li"):
+        time_node = item.select_one("time[datetime]")
+        info_node = item.select_one(".artists.summary a[href*='/concerts/']")
+        if not time_node or not info_node:
             continue
-        seen.add(ticket_url)
-        text = clean_text(item.get_text(" ", strip=True)) or title
+
+        start = time_node.get("datetime")
+        info_url = absolute_url(info_node.get("href"), SONGKICK_BASE_URL)
+        artist_names = [clean_text(node.get_text(" ", strip=True)) for node in item.select(".artists.summary strong")]
+        if not artist_names:
+            artist_names = [clean_text(info_node.get_text(" ", strip=True))]
+
         image_node = item.select_one("img")
-        image_url = absolute_url((image_node.get("data-src") or image_node.get("src")) if image_node else None, BABYS_URL)
+        image_url = absolute_url(image_node.get("src") if image_node else None, SONGKICK_BASE_URL)
+        description = clean_text(item.select_one(".artists.summary").get_text(" ", strip=True))
         event = build_event(
             venue="Baby's All Right",
             date=event_date(start),
             doors_time=None,
             show_time=event_time(start),
-            artists=make_artists([title]),
-            ticket_url=ticket_url,
-            info_url=ticket_url,
+            artists=make_artists(artist_names),
+            ticket_url=info_url,
+            info_url=info_url,
             image_url=image_url,
-            description=text,
+            description=description,
             price=None,
-            category=detect_category_from_text(title, text, default="concerts"),
+            category=detect_category_from_text(description, default="concerts"),
         )
         if event:
             events.append(event)
-    return events
 
+    next_node = soup.select_one("a.next_page[rel='next']") or soup.select_one("a[rel='next']")
+    next_url = absolute_url(next_node.get("href"), SONGKICK_BASE_URL) if next_node else None
+    return events, next_url
+
+
+def scrape_babys_all_right(*, max_pages: int = 5) -> list[dict]:
+    session = make_session()
+    url: str | None = BABYS_CALENDAR_URL
+    events: list[dict] = []
+    seen: set[str] = set()
+
+    for _ in range(max_pages):
+        if not url:
+            break
+        page_events, url = _parse_songkick_page(get_text(url, session=session))
+        for event in page_events:
+            key = event["ticket_url"]
+            if key not in seen:
+                events.append(event)
+                seen.add(key)
+
+    return events

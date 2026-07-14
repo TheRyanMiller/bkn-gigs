@@ -2,7 +2,7 @@
 
 ## Scraping approach
 
-Brooklyn Steel uses the same Bowery Presents source as Music Hall of Williamsburg. The scraper parses the venue HTML and paginates `/info/events/get` with `venues=brooklyn-steel`.
+Brooklyn Steel uses the same Bowery Presents source as Music Hall of Williamsburg. The scraper reads the working `origin.bowerypresents.com` host and paginates `/info/events/get` with `venues=brooklyn-steel`.
 
 ## Category mappings
 

@@ -1,19 +1,14 @@
 from __future__ import annotations
 
 import json
-import logging
 from typing import Any
-
-import requests
 
 from scraper.http import get_json, make_session
 from scraper.utils.categories import detect_category_from_text
 from scraper.utils.dates import event_date, event_time, normalize_time
-from scraper.utils.descriptions import clean_text
 from scraper.utils.events import build_event, make_artists, normalize_price
 
 BASE_URL = "https://partners-endpoint.dice.fm/api/v2/events"
-log = logging.getLogger(__name__)
 
 
 def _params(venue_filters: list[str] | None, promoter_filters: list[str] | None, page: int) -> list[tuple[str, str]]:
@@ -46,7 +41,9 @@ def _artists(raw: dict[str, Any]) -> list[dict[str, str | None]]:
     for key in ("detailed_artists", "artists", "lineup"):
         for artist in raw.get(key) or []:
             if isinstance(artist, dict):
-                names.append(artist.get("name") or artist.get("display_name"))
+                name = artist.get("name") or artist.get("display_name")
+                if name:
+                    names.append(name)
             elif isinstance(artist, str):
                 names.append(artist)
     if not names:
@@ -106,11 +103,7 @@ def scrape_dice_events(
     events: list[dict] = []
 
     for page in range(1, max_pages + 1):
-        try:
-            payload = get_json(BASE_URL, session=session, headers=headers, params=_params(venue_filters, promoter_filters, page))
-        except requests.HTTPError as exc:
-            log.warning("DICE request failed for %s page %s: %s", venue_name, page, exc)
-            break
+        payload = get_json(BASE_URL, session=session, headers=headers, params=_params(venue_filters, promoter_filters, page))
         raw_events = payload.get("data") if isinstance(payload, dict) else []
         if not raw_events:
             break

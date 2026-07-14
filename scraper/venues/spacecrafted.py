@@ -1,72 +1,67 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from typing import Any
 
-from bs4 import BeautifulSoup
-
-from scraper.http import get_text, make_session
+from scraper.http import get_json, make_session
 from scraper.utils.categories import detect_category_from_text
-from scraper.utils.dates import event_date
-from scraper.utils.descriptions import clean_text
-from scraper.utils.events import absolute_url, build_event, make_artists
+from scraper.utils.dates import event_date, event_time
+from scraper.utils.events import build_event, make_artists
 
-UNION_HALL_URL = "https://unionhallny.com/"
+EVENTS_URL = "https://www.eventbrite.com/organizer-profile/api/organizers/17899496497/events/"
+PAGE_SIZE = 50
 
 
-def _event_date(item) -> str | None:
-    time_node = item.select_one("time[datetime], [datetime]")
-    if time_node:
-        return event_date(time_node.get("datetime"))
-
-    month_node = item.select_one(".eventColl-month")
-    day_node = item.select_one(".eventColl-date")
-    if not month_node or not day_node:
-        return None
-    month_text = clean_text(month_node.get_text(" ", strip=True))
-    day_text = clean_text(day_node.get_text(" ", strip=True))
-    if not month_text or not day_text:
+def _eventbrite_event(raw: dict[str, Any]) -> dict | None:
+    if raw.get("is_cancelled") or raw.get("is_online_event"):
         return None
 
-    current = date.today()
-    parsed = datetime.strptime(f"{month_text} {day_text} {current.year}", "%b %d %Y").date()
-    if parsed < current:
-        parsed = parsed.replace(year=parsed.year + 1)
-    return parsed.isoformat()
+    title = raw.get("name")
+    ticket_url = raw.get("url")
+    start_date = raw.get("start_date")
+    start_time = raw.get("start_time")
+    timezone = raw.get("timezone")
+    start = f"{start_date}T{start_time}" if start_date and start_time else start_date
+    description = raw.get("summary")
+
+    image = raw.get("image") or {}
+    availability = raw.get("ticket_availability") or {}
+    minimum_price = availability.get("minimum_ticket_price") or {}
+    price_value = minimum_price.get("major_value")
+    price = "Free" if availability.get("is_free") else f"From ${price_value}" if price_value else None
+
+    return build_event(
+        venue="Union Hall",
+        date=event_date(start, timezone),
+        doors_time=None,
+        show_time=event_time(start, timezone),
+        artists=make_artists([title]),
+        ticket_url=ticket_url,
+        info_url=ticket_url,
+        image_url=image.get("url"),
+        description=description,
+        price=price,
+        category=detect_category_from_text(title, description, default="comedy"),
+    )
 
 
-def scrape_union_hall() -> list[dict]:
+def scrape_union_hall(*, max_pages: int = 10) -> list[dict]:
     session = make_session()
-    soup = BeautifulSoup(get_text(UNION_HALL_URL, session=session), "html.parser")
-    items = soup.select(".eventColl-item, .event-list-item, article")
     events: list[dict] = []
-    seen: set[str] = set()
-    for item in items:
-        title_node = item.select_one(".eventColl-title a, .event-title a, h2 a, h3 a, a[href*='eventbrite']")
-        date = _event_date(item)
-        if not date or not title_node:
-            continue
-        title = clean_text(title_node.get_text(" ", strip=True))
-        buy_node = item.select_one("a[href*='eventbrite'], a[href*='tickets']")
-        ticket_url = absolute_url((buy_node or title_node).get("href"), UNION_HALL_URL)
-        if not title or not ticket_url or ticket_url in seen:
-            continue
-        seen.add(ticket_url)
-        image_node = item.select_one("img")
-        image_url = absolute_url((image_node.get("data-src") or image_node.get("src")) if image_node else None, UNION_HALL_URL)
-        text = clean_text(item.get_text(" ", strip=True)) or title
-        event = build_event(
-            venue="Union Hall",
-            date=date,
-            doors_time=None,
-            show_time=None,
-            artists=make_artists([title]),
-            ticket_url=ticket_url,
-            info_url=absolute_url(title_node.get("href"), UNION_HALL_URL),
-            image_url=image_url,
-            description=text,
-            price=None,
-            category=detect_category_from_text(title, text, default="comedy"),
+
+    for page in range(1, max_pages + 1):
+        payload = get_json(
+            EVENTS_URL,
+            session=session,
+            params={"page": page, "pageSize": PAGE_SIZE},
+            headers={"Accept": "application/json"},
         )
-        if event:
-            events.append(event)
+        raw_events = payload.get("events") if isinstance(payload, dict) else []
+        for raw in raw_events or []:
+            if isinstance(raw, dict):
+                event = _eventbrite_event(raw)
+                if event:
+                    events.append(event)
+        if not payload.get("hasMore"):
+            break
+
     return events

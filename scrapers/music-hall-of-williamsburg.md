@@ -2,7 +2,7 @@
 
 ## Scraping approach
 
-Music Hall of Williamsburg uses Bowery Presents venue pages. The scraper parses the initial venue page and then pages through `/info/events/get` with `venues=music-hall-of-williamsburg`.
+Music Hall of Williamsburg uses Bowery Presents venue pages. The scraper reads the working `origin.bowerypresents.com` host and then pages through `/info/events/get` with `venues=music-hall-of-williamsburg`.
 
 ## Category mappings
 

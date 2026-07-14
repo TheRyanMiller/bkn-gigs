@@ -9,7 +9,7 @@ def test_bowery_parser_extracts_event_item():
       <div class="supporting-acts">with Opener</div>
       <a href="/events/sample-band">Info</a>
       <a class="button event ticket primary" href="https://www.axs.com/events/1">Tickets</a>
-      <img src="https://example.com/image.jpg" />
+      <img src="/media/image.jpg" />
     </div>
     """
     events = _parse_items(html, "Brooklyn Steel")
@@ -17,4 +17,6 @@ def test_bowery_parser_extracts_event_item():
     assert events[0]["venue"] == "Brooklyn Steel"
     assert events[0]["artists"][0]["name"] == "Sample Band"
     assert events[0]["artists"][1]["name"] == "Opener"
+    assert events[0]["info_url"] == "https://www.bowerypresents.com/events/sample-band"
+    assert events[0]["image_url"] == "https://origin.bowerypresents.com/media/image.jpg"
     assert events[0]["category"] == "concerts"

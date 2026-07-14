@@ -2,7 +2,7 @@
 
 ## Scraping approach
 
-Baby's All Right redirects to a See Tickets white-label page at `wl.eventim.us/BabysAllRightBrooklyn`. The scraper requests that page and parses event cards when they are available in HTML.
+Baby's All Right's Eventim page blocks automated requests, so the scraper uses the complete paginated Baby's All Right calendar on Songkick. It parses machine-readable dates, artist lineups, listing links, and images.
 
 ## Category mappings
 
@@ -10,8 +10,8 @@ Music is the default category. Page text is still passed through category detect
 
 ## Edge cases
 
-See Tickets can block direct HTTP requests with anti-bot protection. When blocked, this scraper returns an empty list so the full Brooklyn scrape can keep running.
+Songkick listing links are used for both ticket and info URLs because the calendar does not expose the venue's final checkout URL directly.
 
 ## Opinionated decisions
 
-Do not scrape only homepage featured events. If the full See Tickets calendar is inaccessible, prefer an empty result plus status visibility over partial data.
+Do not scrape only homepage featured events. The paginated venue calendar is used so the result covers the full published schedule.
