@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Star, Loader2 } from "lucide-react";
+import { Loader2, Star } from "lucide-react";
 import { Event } from "../types";
 import EventCard from "../components/EventCard";
 import { useFavorites } from "../context/FavoritesContext";
@@ -11,18 +11,12 @@ interface FavoritesProps {
   onEventClick: (event: Event) => void;
 }
 
+const getTodayString = () =>
+  new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
 export default function Favorites({ events, loading, onEventClick }: FavoritesProps) {
   const { favorites, favoriteCount, clearFavorites } = useFavorites();
 
-  // Get today's date in YYYY-MM-DD format for comparison (US Eastern timezone)
-  const getTodayString = () => {
-    const now = new Date();
-    // Format in Eastern time to get the current date in Brooklyn
-    const eastern = now.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-    return eastern; // Returns YYYY-MM-DD format
-  };
-
-  // Filter events to only show favorited ones that haven't passed
   const favoriteEvents = useMemo(() => {
     const today = getTodayString();
     return events
@@ -31,59 +25,52 @@ export default function Favorites({ events, loading, onEventClick }: FavoritesPr
   }, [events, favorites]);
 
   return (
-    <div className="max-w-5xl mx-auto w-full px-4 py-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex items-center gap-3">
-          <Star size={24} className="text-yellow-400 fill-yellow-400" />
-          <h1 className="text-2xl font-bold text-white">
-            Your Favorites
-            {favoriteCount > 0 && (
-              <span className="text-neutral-500 font-normal ml-2">
-                ({favoriteCount})
-              </span>
-            )}
-          </h1>
+    <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-4 sm:py-6">
+      <div className="mb-4 flex items-center justify-between border-b border-neutral-900 pb-4">
+        <div className="flex items-center gap-2.5">
+          <Star size={17} className="fill-yellow-400 text-yellow-400" />
+          <h1 className="text-lg font-semibold text-white">Favorites</h1>
+          <span className="text-sm text-neutral-500">{favoriteCount}</span>
         </div>
 
         {favoriteCount > 0 && (
           <button
+            type="button"
             onClick={clearFavorites}
-            className="text-xs text-neutral-500 hover:text-red-400 transition-colors"
+            className="rounded-md px-2 py-1 text-xs text-neutral-500 transition-colors hover:bg-neutral-900 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
           >
             Clear all
           </button>
         )}
       </div>
 
-      {/* Events List */}
-      <div className="space-y-4">
-        {favoriteEvents.map((event, index) => (
+      <div className="space-y-2">
+        {favoriteEvents.map((event) => (
           <EventCard
-            key={`${event.venue}-${event.date}-${index}`}
+            key={event.slug}
             event={event}
             onClick={() => onEventClick(event)}
           />
         ))}
 
         {loading && (
-          <div className="text-center py-20">
-            <Loader2 size={48} className="mx-auto text-fuchsia-500 animate-spin" />
+          <div className="py-20 text-center">
+            <Loader2 size={28} className="mx-auto animate-spin text-fuchsia-400" />
           </div>
         )}
 
         {!loading && favoriteEvents.length === 0 && (
-          <div className="text-center py-20 bg-neutral-900/30 rounded-3xl border border-neutral-800 border-dashed">
-            <Star size={48} className="mx-auto text-neutral-700 mb-4" />
-            <h3 className="text-xl font-bold text-white">No favorites yet</h3>
-            <p className="text-neutral-500 mt-2 max-w-sm mx-auto">
-              Star events you're interested in to save them here for quick access.
+          <div className="rounded-lg border border-dashed border-neutral-800 bg-neutral-900/30 py-14 text-center">
+            <Star size={28} className="mx-auto mb-3 text-neutral-700" />
+            <h3 className="text-base font-semibold text-white">No favorites yet</h3>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-500">
+              Save events to keep a short list of gigs you want to see.
             </p>
             <Link
               to="/"
-              className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white transition-colors"
+              className="mt-5 inline-flex h-9 items-center rounded-md bg-fuchsia-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-fuchsia-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300"
             >
-              Browse Events
+              Browse events
             </Link>
           </div>
         )}

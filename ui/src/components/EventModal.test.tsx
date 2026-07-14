@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import EventModal from "./EventModal";
 import { FavoritesProvider } from "../context/FavoritesContext";
 import { Event } from "../types";
@@ -18,12 +18,14 @@ const baseEvent: Event = {
   category: "concerts",
 };
 
-const renderWithProviders = (event: Event) =>
+const renderWithProviders = (event: Event, onClose = vi.fn()) => {
   render(
     <FavoritesProvider>
-      <EventModal event={event} onClose={() => undefined} />
+      <EventModal event={event} onClose={onClose} />
     </FavoritesProvider>
   );
+  return onClose;
+};
 
 
 test("shows Spotify icons in modal when spotify_url is present", () => {
@@ -53,4 +55,15 @@ test("shows event description in modal when present", () => {
 test("hides event description section when absent", () => {
   renderWithProviders(baseEvent);
   expect(screen.queryByText("About")).toBeNull();
+});
+
+test("provides an explicit close action", () => {
+  const onClose = renderWithProviders(baseEvent);
+  fireEvent.click(screen.getByRole("button", { name: "Close event details" }));
+  expect(onClose).toHaveBeenCalledOnce();
+});
+
+test("shows a show time when doors time is unavailable", () => {
+  renderWithProviders({ ...baseEvent, doors_time: null });
+  expect(screen.getByText("Show 8:00 PM")).toBeInTheDocument();
 });

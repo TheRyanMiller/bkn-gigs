@@ -1,234 +1,159 @@
-import { useState, memo } from "react";
+import { memo } from "react";
 import { format } from "date-fns";
-import { MapPin, Clock, Ticket, Share2, Check, CalendarDays, Star } from "lucide-react";
+import { Clock, MapPin, Star, Ticket } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpotify } from "@fortawesome/free-brands-svg-icons";
-import { faGuitar, faFaceLaughSquint, faMasksTheater, faFootball, faStar } from "@fortawesome/free-solid-svg-icons";
 import { Event, CATEGORY_LABELS } from "../types";
 import { useFavorites } from "../context/FavoritesContext";
-
-const categoryIcons = {
-  concerts: faGuitar,
-  comedy: faFaceLaughSquint,
-  broadway: faMasksTheater,
-  sports: faFootball,
-  misc: faStar,
-};
 
 interface EventCardProps {
   event: Event;
   onClick: () => void;
-  mobileHeight?: number;
 }
 
-function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
-  const { venue, date, doors_time, artists, price, image_url, ticket_url, slug, category, is_new, stage } = event;
-  const [copied, setCopied] = useState(false);
+const formatTime = (time: string | null) => {
+  if (!time) return null;
+  const [hours, minutes] = time.split(":");
+  const hour = Number.parseInt(hours, 10);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  return `${hour % 12 || 12}:${minutes} ${suffix}`;
+};
+
+function EventCard({ event, onClick }: EventCardProps) {
+  const {
+    venue,
+    date,
+    doors_time,
+    show_time,
+    artists,
+    price,
+    image_url,
+    ticket_url,
+    slug,
+    category,
+    is_new,
+    stage,
+  } = event;
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(slug);
 
-  const handleFavorite = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const eventDate = new Date(`${date}T12:00:00`);
+  const dateLabel = format(eventDate, "EEE · MMM d").toUpperCase();
+  const mainArtist = artists[0]?.name || "TBA";
+  const supportArtists = artists.slice(1).map((artist) => artist.name).join(", ");
+  const primaryTime = show_time ? formatTime(show_time) : formatTime(doors_time);
+  const timeLabel = primaryTime && !show_time ? `Doors ${primaryTime}` : primaryTime;
+
+  const handleFavorite = (event: React.MouseEvent) => {
+    event.stopPropagation();
     toggleFavorite(slug);
   };
 
-  // Parse date as local time (not UTC) by appending T12:00:00
-  const eventDate = new Date(date + "T12:00:00");
-  const day = eventDate.getDate();
-  const month = format(eventDate, "MMM").toUpperCase();
-  const formattedDate = format(eventDate, "EEE, MMM d");
-  const mainArtist = artists[0]?.name || "TBA";
-  const supportArtists = artists.slice(1);
-
-  // Format doors time for display
-  const formatTime = (time: string | null) => {
-    if (!time) return null;
-    const [hours, minutes] = time.split(":");
-    const h = parseInt(hours);
-    const ampm = h >= 12 ? "PM" : "AM";
-    const hour12 = h % 12 || 12;
-    return `${hour12.toString().padStart(2, "0")}:${minutes} ${ampm}`;
-  };
-
-  const doorsFormatted = formatTime(doors_time);
-
-  const handleShare = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Use /e/slug format for sharing - this route serves OG tags to crawlers
-    const url = `${window.location.origin}/e/${slug}`;
-
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
-
   return (
-    <div
-      className="group relative bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-fuchsia-500/30 rounded-2xl overflow-hidden transition-colors duration-200 flex flex-col sm:flex-row sm:items-stretch cursor-pointer sm:h-[195px]"
-      style={mobileHeight ? { height: mobileHeight } : undefined}
-      onClick={onClick}
+    <article
+      className="group relative flex h-[120px] overflow-hidden rounded-lg border border-neutral-800/90 bg-neutral-900/50 transition-colors hover:border-neutral-700 hover:bg-neutral-900"
     >
-      {/* Image Section */}
-      <div className="relative w-full h-[147px] sm:h-auto sm:min-h-[160px] sm:w-52 sm:self-stretch shrink-0 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent sm:hidden z-[1]" />
+      <button
+        type="button"
+        onClick={onClick}
+        className="absolute inset-0 z-10 cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fuchsia-500/70"
+        aria-label={`View ${mainArtist} at ${venue}`}
+      />
+      <div className="relative w-20 shrink-0 overflow-hidden bg-neutral-900 sm:w-28">
         {image_url ? (
           <img
             src={image_url}
-            alt={mainArtist}
-            className="absolute inset-0 w-full h-full object-cover"
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
-            <Ticket size={48} className="text-neutral-700" />
-          </div>
-        )}
-
-        {/* Date Box overlay on image */}
-        <div className="flex absolute top-1.5 left-2 sm:top-1.5 sm:left-1.5 flex-col items-center justify-center bg-neutral-950 border border-neutral-700 w-11 h-11 rounded-xl z-10">
-          <span className="text-[9px] font-bold text-fuchsia-400 uppercase tracking-wider">{month}</span>
-          <span className="text-base font-bold text-white leading-none">{day}</span>
-        </div>
-
-        {/* New Badge overlay on image (bottom right) */}
-        {is_new && (
-          <div className="absolute bottom-1.5 right-1 sm:bottom-1.5 sm:right-1.5 bg-fuchsia-400 text-neutral-900 text-[9px] font-bold uppercase tracking-tight px-1.5 py-0.5 rounded z-10 shadow-md shadow-black/50 border border-black/30">
-            Just Added!
+          <div className="flex h-full w-full items-center justify-center bg-neutral-900">
+            <Ticket size={24} className="text-neutral-700" />
           </div>
         )}
       </div>
 
-      {/* Category Badge - Top right of card (desktop only) */}
-      <div className="hidden sm:flex absolute top-3 right-5 z-10 items-center gap-1 bg-neutral-800/90 border border-neutral-700 px-1.5 py-0.5 rounded">
-        <FontAwesomeIcon icon={categoryIcons[category]} className="w-2.5 h-2.5 text-neutral-400" />
-        <span className="text-[10px] font-medium text-neutral-400">{CATEGORY_LABELS[category]}</span>
-      </div>
-
-      {/* Content + Actions */}
-      <div className="flex flex-1 flex-col sm:flex-row sm:items-start relative z-[2] p-4 sm:pl-5 sm:pr-4 sm:pt-5 pb-3 sm:pb-3 gap-4 sm:gap-6">
-        {/* Category Badge - Mobile only, top right of content area */}
-        <div className="flex sm:hidden absolute top-3 right-3 z-10 items-center gap-1 bg-neutral-800/90 border border-neutral-700 px-1.5 py-0.5 rounded">
-          <FontAwesomeIcon icon={categoryIcons[category]} className="w-2.5 h-2.5 text-neutral-400" />
-          <span className="text-[10px] font-medium text-neutral-400">{CATEGORY_LABELS[category]}</span>
-        </div>
-
-        {/* Text block */}
-        <div className="flex-1 sm:w-[70%]">
-          <div className="mb-2.5">
-            <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-fuchsia-300 transition-colors leading-snug pr-20 sm:pr-0 line-clamp-2">
-              {mainArtist}
-              {artists[0]?.spotify_url && (
-                <a
-                  href={artists[0].spotify_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline text-fuchsia-400 hover:text-fuchsia-300 ml-2"
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label="Open Spotify artist"
-                >
-                  <FontAwesomeIcon icon={faSpotify} className="inline-block w-[1.1rem] h-[1.1rem] -translate-y-0.5" />
-                </a>
-              )}
-            </h3>
-
-            {supportArtists.length > 0 && (
-              <p className="text-neutral-400 text-sm mt-2 line-clamp-1">
-                <span className="text-neutral-500">with</span>{" "}
-                {supportArtists.map((artist, index) => (
-                  <span key={`${artist.name}-${index}`} className="inline">
-                    {index > 0 && ", "}
-                    {artist.name}
-                    {artist.spotify_url && (
-                      <a
-                        href={artist.spotify_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline text-fuchsia-400 hover:text-fuchsia-300 ml-1"
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label="Open Spotify artist"
-                      >
-                        <FontAwesomeIcon icon={faSpotify} className="inline-block w-[0.66rem] h-[0.66rem] -translate-y-0.5" />
-                      </a>
-                    )}
-                  </span>
-                ))}
-              </p>
+      <div className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 sm:gap-4 sm:px-4">
+        <div className="min-w-0 flex-1">
+          <div className="mb-0.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-neutral-500">
+            <time dateTime={date}>{dateLabel}</time>
+            <span className="hidden text-neutral-700 sm:inline">/</span>
+            <span className="hidden sm:inline">{CATEGORY_LABELS[category]}</span>
+            {is_new && (
+              <span className="inline-flex items-center gap-1 text-fuchsia-300">
+                <span className="h-1 w-1 rounded-full bg-fuchsia-400" />
+                New
+              </span>
             )}
           </div>
 
-          <div className="space-y-1.5 text-sm text-neutral-300">
-            <div className="flex items-center gap-2">
-              <MapPin size={14} className="text-fuchsia-500 shrink-0" />
-              <span className="truncate">{venue}{stage && ` (${stage})`}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CalendarDays size={14} className="text-fuchsia-500 shrink-0" />
-              <span>{formattedDate}</span>
-            </div>
-            {doorsFormatted && (
-              <div className="flex items-center gap-2">
-                <Clock size={14} className="text-fuchsia-500 shrink-0" />
-                <span>Doors {doorsFormatted}</span>
-              </div>
+          <h3 className="line-clamp-2 text-[15px] font-semibold leading-5 text-neutral-50 transition-colors group-hover:text-white sm:line-clamp-1 sm:text-lg sm:leading-6">
+            {mainArtist}
+            {artists[0]?.spotify_url && (
+              <a
+                href={artists[0].spotify_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative z-20 ml-1.5 inline text-neutral-500 transition-colors hover:text-fuchsia-300"
+                aria-label="Open Spotify artist"
+              >
+                <FontAwesomeIcon icon={faSpotify} className="inline-block h-3 w-3 -translate-y-px" />
+              </a>
+            )}
+          </h3>
+
+          {supportArtists && (
+            <p className="mt-0.5 truncate text-xs text-neutral-500">
+              <span className="text-neutral-600">with</span> {supportArtists}
+            </p>
+          )}
+
+          <div className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-neutral-400 sm:gap-3">
+            <span className="flex min-w-0 items-center gap-1.5">
+              <MapPin size={12} className="shrink-0 text-neutral-600" />
+              <span className="truncate">{venue}{stage && ` · ${stage}`}</span>
+            </span>
+            {timeLabel && (
+              <span className="flex shrink-0 items-center gap-1.5">
+                <Clock size={12} className="text-neutral-600" />
+                {timeLabel}
+              </span>
             )}
             {price && (
-              <div className="flex items-center gap-2">
-                <Ticket size={14} className="text-fuchsia-500 shrink-0" />
-                <span>
-                  {price === "See website" ? (
-                    <span className="text-neutral-500">See website for prices</span>
-                  ) : (
-                    price
-                  )}
-                </span>
-              </div>
+              <span className="hidden shrink-0 text-neutral-500 md:inline">
+                {price === "See website" ? "Price on site" : price}
+              </span>
             )}
           </div>
         </div>
 
-        {/* Action Area */}
-        <div className="flex items-center justify-center gap-2 sm:absolute sm:bottom-3 sm:right-3 sm:w-[30%] sm:flex-nowrap sm:justify-end sm:gap-3">
-          {/* Share Button */}
+        <div className="relative z-20 flex shrink-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
           <button
-            onClick={handleShare}
-            className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg transition-colors bg-neutral-800 hover:bg-neutral-700 border border-neutral-700"
-          >
-            {copied ? (
-              <Check size={14} className="text-green-400" />
-            ) : (
-              <Share2 size={16} className="text-fuchsia-400" />
-            )}
-          </button>
-
-          {/* Favorite Button */}
-          <button
+            type="button"
             onClick={handleFavorite}
-            className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg transition-colors bg-neutral-800 hover:bg-neutral-700 border border-neutral-700"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-neutral-800 bg-neutral-900 text-neutral-500 transition-colors hover:border-neutral-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
+            aria-label={favorited ? `Remove ${mainArtist} from favorites` : `Add ${mainArtist} to favorites`}
           >
             <Star
-              size={16}
-              className={favorited ? "fill-yellow-400 text-yellow-400" : "text-fuchsia-400"}
+              size={15}
+              className={favorited ? "fill-yellow-400 text-yellow-400" : ""}
             />
           </button>
 
-          {/* Get Tickets Button */}
           <a
             href={ticket_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-4 py-2 shrink-0 rounded-lg font-bold text-sm transition-colors bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white whitespace-nowrap"
-            onClick={(e) => e.stopPropagation()}
+            className="flex h-9 w-9 items-center justify-center rounded-md bg-fuchsia-600 text-white transition-colors hover:bg-fuchsia-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300 sm:w-auto sm:px-3.5"
+            onClick={(event) => event.stopPropagation()}
+            aria-label={`Get tickets for ${mainArtist}`}
           >
             <Ticket size={14} />
-            Get Tickets
+            <span className="ml-1.5 hidden text-xs font-semibold sm:inline">Tickets</span>
           </a>
-
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 

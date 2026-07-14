@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import EventCard from "./EventCard";
 import { FavoritesProvider } from "../context/FavoritesContext";
 import { Event } from "../types";
@@ -18,22 +18,48 @@ const baseEvent: Event = {
   category: "concerts",
 };
 
-const renderWithProviders = (event: Event) =>
+const renderWithProviders = (event: Event, onClick = vi.fn()) => {
   render(
     <FavoritesProvider>
-      <EventCard event={event} onClick={() => undefined} />
+      <EventCard event={event} onClick={onClick} />
     </FavoritesProvider>
   );
+  return onClick;
+};
 
-
-test("shows Spotify icons when spotify_url is present", () => {
+test("keeps the primary Spotify link in the compact row", () => {
   renderWithProviders(baseEvent);
-  const icons = screen.getAllByLabelText("Open Spotify artist");
-  expect(icons.length).toBe(2);
+  expect(screen.getAllByLabelText("Open Spotify artist")).toHaveLength(1);
 });
 
-test("hides Spotify icons when spotify_url is missing", () => {
+test("hides the Spotify link when spotify_url is missing", () => {
   const event = { ...baseEvent, artists: [{ name: "No Link" }] };
   renderWithProviders(event);
   expect(screen.queryByLabelText("Open Spotify artist")).toBeNull();
+});
+
+test("shows show time before doors time", () => {
+  renderWithProviders(baseEvent);
+  expect(screen.getByText("8:00 PM")).toBeInTheDocument();
+  expect(screen.queryByText("Doors 7:00 PM")).toBeNull();
+});
+
+test("falls back to a labeled doors time", () => {
+  renderWithProviders({ ...baseEvent, show_time: null });
+  expect(screen.getByText("Doors 7:00 PM")).toBeInTheDocument();
+});
+
+test("opens event details from the row button", () => {
+  const onClick = renderWithProviders(baseEvent);
+  const rowButton = screen.getByRole("button", { name: "View Sample Band at Brooklyn Steel" });
+  rowButton.focus();
+  expect(rowButton).toHaveFocus();
+  fireEvent.click(rowButton);
+  expect(onClick).toHaveBeenCalledOnce();
+});
+
+test("keeps nested actions separate from row selection", () => {
+  const onClick = renderWithProviders(baseEvent);
+  fireEvent.click(screen.getByRole("button", { name: "Add Sample Band to favorites" }));
+  expect(onClick).not.toHaveBeenCalled();
 });

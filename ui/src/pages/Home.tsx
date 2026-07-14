@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { VariableSizeList as List } from "react-window";
+import { FixedSizeList as List } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { Music, Loader2 } from "lucide-react";
+import { Loader2, Music } from "lucide-react";
 import { Event, EventCategory, ALL_CATEGORIES } from "../types";
 import EventCard from "../components/EventCard";
 import FilterBar from "../components/FilterBar";
@@ -17,71 +17,11 @@ interface DateRange {
   end: string | null;
 }
 
-const CARD_GAP = 16;
-const LIST_TOP_BUFFER = 8;
-const DESKTOP_CARD_HEIGHT = 195;
+const CARD_HEIGHT = 120;
+const ROW_HEIGHT = 128;
 
-// Get today's date in YYYY-MM-DD format for comparison (US Eastern timezone)
-const getTodayString = () => {
-  const now = new Date();
-  // Format in Eastern time to get the current date in Brooklyn
-  const eastern = now.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-  return eastern; // Returns YYYY-MM-DD format
-};
-
-// Calculate mobile card height based on content
-const getMobileCardHeight = (event: Event): number => {
-  // Image section: h-[147px]
-  let height = 147;
-
-  // Content container padding: p-4 (16px) top, pb-3 (12px) bottom
-  height += 16 + 12;
-
-  // Title: text-lg leading-snug, assume 2 lines max (~50px)
-  height += 50;
-
-  // Title container margin bottom: mb-2.5 = 10px
-  height += 10;
-
-  // Support artists (if present): mt-2 (8px) + text-sm (~20px) = 28px
-  if (event.artists.length > 1) {
-    height += 28;
-  }
-
-  // Details section with space-y-1.5 (6px gaps between items)
-  // Venue: always present (~20px)
-  height += 20;
-  // Date: always present (6px gap + 20px)
-  height += 6 + 20;
-  // Doors (if present): 6px gap + 20px
-  if (event.doors_time) {
-    height += 6 + 20;
-  }
-  // Price (if present): 6px gap + 20px
-  if (event.price) {
-    height += 6 + 20;
-  }
-
-  // Gap between text block and action area: gap-4 = 16px
-  height += 16;
-
-  // Action buttons: h-10 = 40px
-  height += 40;
-
-  // Safety buffer for rounding/browser differences
-  height += 4;
-
-  return height;
-};
-
-// Row heights for virtualized list
-const getItemHeight = (event: Event, isMobile: boolean, index: number): number => {
-  // Desktop: fixed 195px + 16px gap
-  // Mobile: dynamic based on content + 16px gap
-  const cardHeight = isMobile ? getMobileCardHeight(event) : DESKTOP_CARD_HEIGHT;
-  const topBuffer = index === 0 ? LIST_TOP_BUFFER : 0;
-  return cardHeight + CARD_GAP + topBuffer;
-};
+const getTodayString = () =>
+  new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
 export default function Home({ events, loading, onEventClick }: HomeProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,166 +29,82 @@ export default function Home({ events, loading, onEventClick }: HomeProps) {
   const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([]);
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
   const [showOnlyNew, setShowOnlyNew] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const listRef = useRef<List>(null);
 
-  // Check if mobile on mount and resize
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const venues = useMemo(
+    () => Array.from(new Set(events.map((event) => event.venue))).sort(),
+    [events]
+  );
 
-  // Get unique venues
-  const venues = useMemo(() => {
-    const uniqueVenues = new Set(events.map((event) => event.venue));
-    return Array.from(uniqueVenues).sort();
-  }, [events]);
-
-  // Get categories that exist in events
   const categories = useMemo(() => {
     const eventCategories = new Set(events.map((event) => event.category));
-    return ALL_CATEGORIES.filter((cat) => eventCategories.has(cat));
+    return ALL_CATEGORIES.filter((category) => eventCategories.has(category));
   }, [events]);
 
-  // Filter events based on search, category, venue selection, and date range
   const filteredEvents = useMemo(() => {
     const today = getTodayString();
     const now = new Date();
-    const staleThresholdMs = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
+    const staleThresholdMs = 3 * 24 * 60 * 60 * 1000;
 
     return events.filter((event) => {
-      // Hide stale events (not seen by scraper in > 3 days) - likely cancelled
-      if (event.last_seen) {
-        const lastSeenDate = new Date(event.last_seen);
-        const daysSinceLastSeen = now.getTime() - lastSeenDate.getTime();
-        if (daysSinceLastSeen > staleThresholdMs) {
-          return false;
-        }
-      }
-
-      // Default to today onwards when no start date is set
-      // (Past events require explicit start date selection)
-      if (!dateRange.start && event.date < today) {
+      if (event.last_seen && now.getTime() - new Date(event.last_seen).getTime() > staleThresholdMs) {
         return false;
       }
+      if (!dateRange.start && event.date < today) return false;
+      if (dateRange.start && event.date < dateRange.start) return false;
+      if (dateRange.end && event.date > dateRange.end) return false;
+      if (selectedCategories.length > 0 && !selectedCategories.includes(event.category)) return false;
+      if (selectedVenues.length > 0 && !selectedVenues.includes(event.venue)) return false;
+      if (showOnlyNew && !event.is_new) return false;
 
-      // Explicit date range filtering
-      if (dateRange.start && event.date < dateRange.start) {
-        return false;
-      }
-      if (dateRange.end && event.date > dateRange.end) {
-        return false;
-      }
-
-      // Category filter
-      if (selectedCategories.length > 0 && !selectedCategories.includes(event.category)) {
-        return false;
-      }
-
-      // Venue filter
-      if (selectedVenues.length > 0 && !selectedVenues.includes(event.venue)) {
-        return false;
-      }
-
-      // New filter - show only newly added events
-      if (showOnlyNew && !event.is_new) {
-        return false;
-      }
-
-      // Search filter
       if (searchQuery.length >= 3) {
         const query = searchQuery.toLowerCase();
-        const artistMatch = event.artists.some((artist) =>
-          artist.name.toLowerCase().includes(query)
+        return (
+          event.artists.some((artist) => artist.name.toLowerCase().includes(query)) ||
+          event.venue.toLowerCase().includes(query)
         );
-        const venueMatch = event.venue.toLowerCase().includes(query);
-        return artistMatch || venueMatch;
       }
       return true;
     });
   }, [events, searchQuery, selectedCategories, selectedVenues, dateRange, showOnlyNew]);
 
-  // Reset list scroll when filters change
   useEffect(() => {
     listRef.current?.scrollTo(0);
   }, [searchQuery, selectedCategories, selectedVenues, dateRange, showOnlyNew]);
 
-  // Reset list cache when filtered events or mobile state changes
-  useEffect(() => {
-    listRef.current?.resetAfterIndex(0);
-  }, [filteredEvents, isMobile]);
-
-  const handleSearchChange = useCallback((query: string) => {
-    setSearchQuery(query);
-  }, []);
-
   const handleCategoryToggle = useCallback((category: EventCategory) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+    setSelectedCategories((current) =>
+      current.includes(category) ? current.filter((item) => item !== category) : [...current, category]
     );
   }, []);
 
   const handleVenueToggle = useCallback((venue: string) => {
-    setSelectedVenues((prev) =>
-      prev.includes(venue) ? prev.filter((v) => v !== venue) : [...prev, venue]
+    setSelectedVenues((current) =>
+      current.includes(venue) ? current.filter((item) => item !== venue) : [...current, venue]
     );
   }, []);
 
-  const handleDateRangeChange = useCallback((range: DateRange) => {
-    setDateRange(range);
-  }, []);
-
-  const handleShowOnlyNewToggle = useCallback(() => {
-    setShowOnlyNew((prev) => !prev);
-  }, []);
-
-  // Get item size for virtualized list
-  const getItemSize = useCallback(
-    (index: number) => {
-      const event = filteredEvents[index];
-      return getItemHeight(event, isMobile, index); // Already includes gap
-    },
-    [filteredEvents, isMobile]
-  );
-
-  // Row renderer for virtualized list
   const Row = useCallback(
     ({ index, style }: { index: number; style: React.CSSProperties }) => {
       const event = filteredEvents[index];
-      // Card height stays fixed; row height includes the gap and optional first-item buffer.
-      const cardHeight = isMobile ? getMobileCardHeight(event) : DESKTOP_CARD_HEIGHT;
-      const topBuffer = index === 0 ? LIST_TOP_BUFFER : 0;
       return (
         <div style={style}>
           <div
-            className="max-w-5xl mx-auto w-full px-4"
-            style={{
-              height: "100%",
-              paddingTop: topBuffer,
-              paddingBottom: CARD_GAP,
-              boxSizing: "border-box",
-            }}
+            className="mx-auto w-full max-w-6xl px-3 sm:px-4"
+            style={{ height: ROW_HEIGHT, paddingBottom: ROW_HEIGHT - CARD_HEIGHT }}
           >
-            <EventCard
-              key={event.slug}
-              event={event}
-              onClick={() => onEventClick(event)}
-              mobileHeight={isMobile ? cardHeight : undefined}
-            />
+            <EventCard event={event} onClick={() => onEventClick(event)} />
           </div>
         </div>
       );
     },
-    [filteredEvents, onEventClick, isMobile]
+    [filteredEvents, onEventClick]
   );
 
   return (
-    <div className="h-[calc(100dvh-56px)] sm:h-[calc(100dvh-80px)] flex flex-col">
-      {/* Search & Filters */}
-      <div className="shrink-0 bg-neutral-950 border-b border-white/10 overflow-visible pb-1 sm:pb-2">
-        <div className="max-w-5xl mx-auto w-full px-4 overflow-visible">
+    <div className="flex h-[calc(100dvh-56px)] flex-col md:h-[calc(100dvh-64px)]">
+      <div className="shrink-0 border-b border-neutral-900 bg-neutral-950 py-2">
+        <div className="mx-auto w-full max-w-6xl px-3 sm:px-4">
           <FilterBar
             venues={venues}
             selectedVenues={selectedVenues}
@@ -256,27 +112,30 @@ export default function Home({ events, loading, onEventClick }: HomeProps) {
             categories={categories}
             selectedCategories={selectedCategories}
             onCategoryToggle={handleCategoryToggle}
-            onSearchChange={handleSearchChange}
-            onDateRangeChange={handleDateRangeChange}
+            onSearchChange={setSearchQuery}
+            onDateRangeChange={setDateRange}
             showOnlyNew={showOnlyNew}
-            onShowOnlyNewToggle={handleShowOnlyNewToggle}
+            onShowOnlyNewToggle={() => setShowOnlyNew((current) => !current)}
+            resultCount={filteredEvents.length}
+            totalCount={events.length}
           />
         </div>
       </div>
 
-      {/* Events List - Virtualized */}
-      <div className="flex-1 min-h-0 w-full">
+      <div className="min-h-0 flex-1 py-2">
         {loading && (
-          <div className="text-center py-20">
-            <Loader2 size={48} className="mx-auto text-fuchsia-500 animate-spin" />
+          <div className="py-20 text-center">
+            <Loader2 size={28} className="mx-auto animate-spin text-fuchsia-400" />
           </div>
         )}
 
         {!loading && filteredEvents.length === 0 && (
-          <div className="max-w-5xl mx-auto w-full px-4 text-center py-20 bg-neutral-900/30 rounded-3xl border border-neutral-800 border-dashed">
-            <Music size={48} className="mx-auto text-neutral-700 mb-4" />
-            <h3 className="text-xl font-bold text-white">No gigs found</h3>
-            <p className="text-neutral-500 mt-2">Try adjusting your search terms</p>
+          <div className="mx-auto mt-6 w-full max-w-6xl px-3 sm:px-4">
+            <div className="rounded-lg border border-dashed border-neutral-800 bg-neutral-900/30 py-14 text-center">
+              <Music size={28} className="mx-auto mb-3 text-neutral-700" />
+              <h3 className="text-base font-semibold text-white">No gigs found</h3>
+              <p className="mt-1 text-sm text-neutral-500">Try adjusting your search or filters.</p>
+            </div>
           </div>
         )}
 
@@ -288,8 +147,8 @@ export default function Home({ events, loading, onEventClick }: HomeProps) {
                 height={height}
                 width={width}
                 itemCount={filteredEvents.length}
-                itemSize={getItemSize}
-                overscanCount={3}
+                itemSize={ROW_HEIGHT}
+                overscanCount={5}
               >
                 {Row}
               </List>
