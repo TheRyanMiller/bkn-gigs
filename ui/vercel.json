@@ -1,9 +1,14 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "rewrites": [
     {
       "source": "/e/:slug",
       "destination": "/api/og?event=:slug"
+    },
+    {
+      "source": "/favorites",
+      "destination": "/index.html"
     }
   ]
 }
