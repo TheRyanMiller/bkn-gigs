@@ -1,20 +1,7 @@
 import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { format } from "date-fns";
-import {
-  CalendarDays,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  ExternalLink,
-  Info,
-  MapPin,
-  Share2,
-  Star,
-  Ticket,
-  X,
-} from "lucide-react";
+import { MapPin, Clock, Ticket, ExternalLink, Share2, Check, CalendarDays, Star, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpotify } from "@fortawesome/free-brands-svg-icons";
 import { Event } from "../types";
@@ -26,14 +13,6 @@ interface EventModalProps {
 }
 
 const DESCRIPTION_COLLAPSE_THRESHOLD = 420;
-
-const formatTime = (time: string | null) => {
-  if (!time) return null;
-  const [hours, minutes] = time.split(":");
-  const hour = Number.parseInt(hours, 10);
-  const suffix = hour >= 12 ? "PM" : "AM";
-  return `${hour % 12 || 12}:${minutes} ${suffix}`;
-};
 
 export default function EventModal({ event, onClose }: EventModalProps) {
   const [copied, setCopied] = useState(false);
@@ -54,12 +33,34 @@ export default function EventModal({ event, onClose }: EventModalProps) {
     stage,
     description,
   } = event;
-  const favorited = isFavorite(slug);
+  
+  const handleShare = async () => {
+    // Use /e/slug format for sharing - this route serves OG tags to crawlers
+    const url = `${window.location.origin}/e/${slug}`;
 
-  const eventDate = new Date(`${date}T12:00:00`);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  // Parse date as local time (not UTC) by appending T12:00:00
+  const eventDate = new Date(date + "T12:00:00");
   const formattedDate = format(eventDate, "EEEE, MMMM d, yyyy");
   const day = eventDate.getDate();
   const month = format(eventDate, "MMM").toUpperCase();
+
+  const formatTime = (time: string | null) => {
+    if (!time) return null;
+    const [hours, minutes] = time.split(":");
+    const h = parseInt(hours);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return `${hour12.toString().padStart(2, "0")}:${minutes} ${ampm}`;
+  };
 
   const descriptionText = description?.trim() || "";
   const isLongDescription = descriptionText.length > DESCRIPTION_COLLAPSE_THRESHOLD;
@@ -68,108 +69,100 @@ export default function EventModal({ event, onClose }: EventModalProps) {
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
 
-  const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/e/${slug}`);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error("Failed to copy:", error);
-    }
-  };
-
   return (
-    <Transition.Root show as={Fragment}>
+    <Transition.Root show={true} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
           as={Fragment}
-          enter="ease-out duration-150"
+          enter="duration-0"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="ease-in duration-100"
+          leave="duration-0"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-neutral-950/95" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-hidden">
-          <div className="flex min-h-full items-start justify-center p-2 pt-3 text-center sm:items-center sm:p-4">
+          <div className="flex min-h-full items-start justify-center p-4 pt-12 text-center sm:items-center sm:pt-4">
             <Transition.Child
               as={Fragment}
-              enter="ease-out duration-150"
-              enterFrom="opacity-0 translate-y-2 sm:translate-y-0 sm:scale-[0.98]"
-              enterTo="opacity-100 translate-y-0 sm:scale-100"
-              leave="ease-in duration-100"
-              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-              leaveTo="opacity-0 translate-y-2 sm:translate-y-0 sm:scale-[0.98]"
+              enter="duration-0"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="duration-0"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
             >
-              <Dialog.Panel className="relative max-h-[calc(100dvh-1.25rem)] w-full max-w-2xl transform overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 text-left shadow-2xl">
-                <div className="absolute right-2.5 top-2.5 z-20 flex gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => toggleFavorite(slug)}
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-neutral-700/80 bg-neutral-950/90 text-neutral-400 backdrop-blur transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
-                    aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
-                  >
-                    <Star size={16} className={favorited ? "fill-yellow-400 text-yellow-400" : ""} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-neutral-700/80 bg-neutral-950/90 text-neutral-400 backdrop-blur transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
-                    aria-label="Close event details"
-                  >
-                    <X size={17} />
-                  </button>
-                </div>
+              <Dialog.Panel className="relative w-full max-h-[calc(100dvh-4rem)] transform overflow-hidden rounded-2xl bg-neutral-900 border-2 border-fuchsia-500/40 text-left shadow-xl sm:my-8 sm:max-h-[calc(100vh-2rem)] sm:max-w-3xl">
+                {/* Favorite button - top right */}
+                <button
+                  type="button"
+                  className="absolute right-3 top-3 z-10 rounded-full bg-neutral-800 p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-colors"
+                  onClick={() => toggleFavorite(slug)}
+                >
+                  <span className="sr-only">{isFavorite(slug) ? "Remove from favorites" : "Add to favorites"}</span>
+                  <Star
+                    size={20}
+                    className={isFavorite(slug) ? "fill-yellow-400 text-yellow-400" : ""}
+                  />
+                </button>
 
-                <div className="flex max-h-[calc(100dvh-1.25rem)] flex-col sm:h-[34rem] sm:max-h-[calc(100vh-2rem)] sm:flex-row">
-                  <div className="relative h-40 w-full shrink-0 bg-neutral-950 sm:h-full sm:w-60">
+                <div className="flex max-h-[calc(100dvh-4rem)] flex-col sm:h-[36rem] sm:max-h-[calc(100vh-2rem)] sm:flex-row">
+                  {/* Image */}
+                  <div className="relative w-full h-48 shrink-0 bg-neutral-950 sm:h-full sm:w-72">
                     {image_url ? (
                       <img
                         src={image_url}
                         alt={artists[0]?.name || "Event image"}
-                        className="h-full w-full object-cover"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-neutral-950">
-                        <Ticket size={40} className="text-neutral-700" />
+                      <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
+                        <Ticket size={64} className="text-neutral-700" />
                       </div>
                     )}
-                    <div className="absolute left-3 top-3 flex h-12 w-12 flex-col items-center justify-center rounded-lg border border-neutral-700 bg-neutral-950/95">
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-fuchsia-300">
+                    {/* Date overlay */}
+                    <div className="absolute top-4 left-4 flex flex-col items-center justify-center bg-neutral-950 border border-neutral-700 w-14 h-14 rounded-xl">
+                      <span className="text-[10px] font-bold text-fuchsia-400 uppercase tracking-wider">
                         {month}
                       </span>
-                      <span className="text-lg font-semibold leading-none text-white">{day}</span>
+                      <span className="text-xl font-bold text-white leading-none">
+                        {day}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-5">
+                  {/* Content */}
+                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-6">
                     <div
                       className="min-h-0 flex-1 overflow-y-auto pr-1 sm:pr-2"
                       data-testid="event-modal-scroll-area"
                     >
-                      <Dialog.Title className="mb-1 text-xl font-semibold leading-tight text-white sm:pr-20 sm:text-2xl">
+                      <Dialog.Title
+                        as="h3"
+                        className="text-2xl font-bold text-white mb-1 pr-12"
+                      >
                         {artists[0]?.name}
                         {artists[0]?.spotify_url && (
                           <a
                             href={artists[0].spotify_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="ml-2 inline text-neutral-500 transition-colors hover:text-fuchsia-300"
+                            className="inline text-fuchsia-400 hover:text-fuchsia-300 ml-2"
                             aria-label="Open Spotify artist"
                           >
-                            <FontAwesomeIcon icon={faSpotify} className="inline-block h-4 w-4 -translate-y-0.5" />
+                            <FontAwesomeIcon icon={faSpotify} className="inline-block w-[1.1rem] h-[1.1rem] -translate-y-0.5" />
                           </a>
                         )}
                       </Dialog.Title>
 
                       {artists.length > 1 && (
-                        <p className="mb-4 text-sm text-neutral-400">
-                          <span className="text-neutral-600">with</span>{" "}
+                        <p className="text-neutral-400 text-sm mb-4">
+                          <span className="text-neutral-500">with</span>{" "}
                           {artists.slice(1).map((artist, index) => (
-                            <span key={`${artist.name}-${index}`}>
+                            <span key={`${artist.name}-${index}`} className="inline">
                               {index > 0 && ", "}
                               {artist.name}
                               {artist.spotify_url && (
@@ -177,10 +170,10 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                                   href={artist.spotify_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="ml-1 inline text-neutral-500 transition-colors hover:text-fuchsia-300"
+                                  className="inline text-fuchsia-400 hover:text-fuchsia-300 ml-1"
                                   aria-label="Open Spotify artist"
                                 >
-                                  <FontAwesomeIcon icon={faSpotify} className="inline-block h-2.5 w-2.5 -translate-y-px" />
+                                  <FontAwesomeIcon icon={faSpotify} className="inline-block w-[0.66rem] h-[0.66rem] -translate-y-0.5" />
                                 </a>
                               )}
                             </span>
@@ -188,38 +181,40 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                         </p>
                       )}
 
-                      <div className="mb-4 space-y-2 text-sm text-neutral-300">
-                        <div className="flex items-center gap-2">
-                          <MapPin size={13} className="shrink-0 text-neutral-500" />
-                          <span>{venue}{stage && ` · ${stage}`}</span>
+                      <div className="space-y-3 mb-6">
+                        <div className="flex items-center gap-2 text-neutral-300 text-sm">
+                          <MapPin size={14} className="text-fuchsia-500" />
+                          <span>{venue}{stage && ` (${stage})`}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <CalendarDays size={13} className="shrink-0 text-neutral-500" />
+
+                        <div className="flex items-center gap-2 text-neutral-300 text-sm">
+                          <CalendarDays size={14} className="text-fuchsia-500" />
                           <span>{formattedDate}</span>
                         </div>
-                        {(doors_time || show_time) && (
-                          <div className="flex items-center gap-2">
-                            <Clock size={13} className="shrink-0 text-neutral-500" />
+
+                        {doors_time && (
+                          <div className="flex items-center gap-2 text-neutral-300 text-sm">
+                            <Clock size={14} className="text-fuchsia-500" />
                             <span>
-                              {doors_time && `Doors ${formatTime(doors_time)}`}
-                              {doors_time && show_time && " · "}
-                              {show_time && `Show ${formatTime(show_time)}`}
+                              Doors {formatTime(doors_time)}
+                              {show_time && ` · Show ${formatTime(show_time)}`}
                             </span>
                           </div>
                         )}
+
                         {price && (
-                          <div className="flex items-center gap-2">
-                            <Ticket size={13} className="shrink-0 text-neutral-500" />
+                          <div className="flex items-center gap-2 text-neutral-300 text-sm">
+                            <Ticket size={14} className="text-fuchsia-500" />
                             <span>{price}</span>
                           </div>
                         )}
                       </div>
 
                       {descriptionText && (
-                        <div className="border-t border-neutral-800 pt-4">
-                          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                            <Info size={13} />
-                            About
+                        <div className="mb-6 border-t border-neutral-800 pt-5 sm:mb-4">
+                          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-neutral-100">
+                            <Info size={14} className="text-fuchsia-500" />
+                            <span>About</span>
                           </div>
                           <div
                             className={`space-y-3 text-sm leading-6 text-neutral-300 ${
@@ -237,12 +232,18 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                               type="button"
                               onClick={() => setDescriptionExpanded((expanded) => !expanded)}
                               aria-expanded={descriptionExpanded}
-                              className="mt-3 inline-flex items-center gap-1 rounded text-xs font-medium text-fuchsia-300 transition-colors hover:text-fuchsia-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
+                              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-fuchsia-400 transition-colors hover:text-fuchsia-300"
                             >
                               {descriptionExpanded ? (
-                                <>Show less <ChevronUp size={13} /></>
+                                <>
+                                  Show less
+                                  <ChevronUp size={14} />
+                                </>
                               ) : (
-                                <>Show more <ChevronDown size={13} /></>
+                                <>
+                                  Show more
+                                  <ChevronDown size={14} />
+                                </>
                               )}
                             </button>
                           )}
@@ -250,33 +251,35 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                       )}
                     </div>
 
-                    <div className="mt-3 flex shrink-0 gap-2 border-t border-neutral-800 pt-3">
+                    <div className="mt-4 flex shrink-0 flex-wrap gap-3 border-t border-neutral-800 pt-4">
                       <button
-                        type="button"
                         onClick={handleShare}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-neutral-700 bg-neutral-800 text-neutral-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
-                        aria-label={copied ? "Event link copied" : "Copy event link"}
+                        className="flex items-center justify-center w-12 h-12 rounded-xl transition-colors bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white border border-neutral-700"
                       >
-                        {copied ? <Check size={15} className="text-green-400" /> : <Share2 size={15} />}
+                        {copied ? (
+                          <Check size={18} className="text-green-400" />
+                        ) : (
+                          <Share2 size={18} className="text-fuchsia-400" />
+                        )}
                       </button>
                       <a
                         href={ticket_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-fuchsia-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-fuchsia-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300"
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white transition-colors"
                       >
-                        <Ticket size={14} />
+                        <Ticket size={16} />
                         Tickets
                       </a>
-                      {info_url && info_url !== ticket_url && (
+                      {info_url && (
                         <a
                           href={info_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex h-10 items-center justify-center gap-1.5 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm font-medium text-neutral-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white border border-neutral-700 transition-colors"
                         >
-                          <ExternalLink size={14} />
-                          <span className="hidden sm:inline">Info</span>
+                          <ExternalLink size={16} />
+                          Info
                         </a>
                       )}
                     </div>

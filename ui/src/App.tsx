@@ -71,13 +71,14 @@ function AppContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-950 font-sans text-neutral-200 selection:bg-fuchsia-500/30 selection:text-fuchsia-200">
+    <div className="bg-neutral-950 text-neutral-200 font-sans selection:bg-fuchsia-500/30 selection:text-fuchsia-200">
       <Header
         status={scrapeStatus}
         onStatusClick={() => setShowStatusModal(true)}
       />
 
-      <main>
+      {/* Main Content */}
+      <main className="pt-[2px]">
         <Routes>
           <Route
             path="/"

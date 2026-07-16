@@ -1,14 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ElementType } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { format } from "date-fns";
-import { Calendar, Check, ChevronDown, MapPin, Search, Sparkles, Tag, X } from "lucide-react";
+import { Search, MapPin, Calendar, X, ChevronDown, Tag, Sparkles } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faFaceLaughSquint,
-  faFootball,
-  faGuitar,
-  faMasksTheater,
-  faStar,
-} from "@fortawesome/free-solid-svg-icons";
+import { faGuitar, faFaceLaughSquint, faMasksTheater, faFootball, faStar } from "@fortawesome/free-solid-svg-icons";
 import { EventCategory, CATEGORY_LABELS } from "../types";
 
 const categoryIcons = {
@@ -35,63 +29,93 @@ interface FilterBarProps {
   onDateRangeChange: (range: DateRange) => void;
   showOnlyNew: boolean;
   onShowOnlyNewToggle: () => void;
-  resultCount: number;
-  totalCount: number;
 }
 
-interface FilterControlProps {
-  label: string;
-  icon: ElementType;
-  active?: boolean;
-  expanded?: boolean;
-  onToggle: () => void;
-  onClear?: () => void;
-}
-
-const controlBase =
-  "h-9 border text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70";
-
-function FilterControl({
+const FilterPill = ({
   label,
-  icon: Icon,
   active = false,
-  expanded = false,
-  onToggle,
+  icon: Icon,
+  onClick,
   onClear,
-}: FilterControlProps) {
-  return (
-    <div
-      className={`flex h-9 shrink-0 items-stretch overflow-hidden rounded-md border transition-colors ${
+}: {
+  label: string;
+  active?: boolean;
+  icon: React.ElementType;
+  onClick: (e: React.MouseEvent) => void;
+  onClear?: (e: React.MouseEvent) => void;
+}) => (
+  <button
+    onClick={onClick}
+    className={`
+      flex items-center gap-0.5 md:gap-1.5 px-1.5 py-1.5 md:px-3 md:py-2 rounded-lg md:rounded-xl text-sm font-medium transition-colors
+      border whitespace-nowrap h-full
+      ${
         active
-          ? "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-200"
-          : "border-neutral-800 bg-neutral-900 text-neutral-400 hover:border-neutral-700 hover:text-white"
-      }`}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex min-w-0 items-center gap-1.5 px-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fuchsia-500/70"
-        aria-expanded={expanded}
+          ? "bg-fuchsia-500/10 border-fuchsia-500/50 text-fuchsia-300"
+          : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+      }
+    `}
+  >
+    <Icon size={12} className="md:w-3.5 md:h-3.5" />
+    <span className="text-[11px] md:text-sm">{label}</span>
+    {active && onClear ? (
+      <span
+        onClick={onClear}
+        className="rounded-full hover:bg-neutral-700 transition-colors"
       >
-        <Icon size={13} className="shrink-0" />
-        <span className="max-w-32 truncate text-xs font-medium">{label}</span>
-        <ChevronDown size={12} className={`shrink-0 opacity-50 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        <X size={10} className="md:w-3 md:h-3" />
+      </span>
+    ) : (
+      <ChevronDown size={10} className="opacity-50 md:w-3 md:h-3" />
+    )}
+  </button>
+);
+
+const TogglePill = ({
+  label,
+  active = false,
+  icon: Icon,
+  onClick,
+  tooltip,
+}: {
+  label: string;
+  active?: boolean;
+  icon: React.ElementType;
+  onClick: (e: React.MouseEvent) => void;
+  tooltip?: string;
+}) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div className="relative h-full overflow-visible">
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onFocus={() => setShowTooltip(true)}
+        onBlur={() => setShowTooltip(false)}
+        className={`
+          flex items-center gap-0.5 md:gap-1 px-1.5 py-1.5 md:px-2 md:py-2 rounded-lg md:rounded-xl text-sm font-medium transition-colors
+          border whitespace-nowrap h-full
+          ${
+            active
+              ? "bg-fuchsia-500/10 border-fuchsia-500/50 text-fuchsia-300"
+              : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+          }
+        `}
+      >
+        <Icon size={12} className="md:w-3.5 md:h-3.5" />
+        <span className="text-[11px] md:text-sm">{label}</span>
       </button>
-      {active && onClear && (
-        <button
-          type="button"
-          onClick={onClear}
-          className="flex w-7 items-center justify-center border-l border-fuchsia-500/20 text-fuchsia-300 transition-colors hover:bg-fuchsia-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fuchsia-500/70"
-          aria-label={`Clear ${label} filter`}
-        >
-          <X size={11} />
-        </button>
+      {tooltip && showTooltip && (
+        <div className="absolute left-0 bottom-full mb-2 px-2 py-1 bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs rounded-lg whitespace-nowrap pointer-events-none z-50">
+          {tooltip}
+          <div className="absolute left-2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-neutral-700" />
+        </div>
       )}
     </div>
   );
-}
-
-const formatFilterDate = (value: string) => format(new Date(`${value}T12:00:00`), "MMM d");
+};
 
 export default function FilterBar({
   venues,
@@ -104,153 +128,221 @@ export default function FilterBar({
   onDateRangeChange,
   showOnlyNew,
   onShowOnlyNewToggle,
-  resultCount,
-  totalCount,
 }: FilterBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [venueDropdownOpen, setVenueDropdownOpen] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const venueDropdownRef = useRef<HTMLDivElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const dateDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileVenueDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileCategoryDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDateDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Calculate 3 months ago for min date on start date picker
   const threeMonthsAgo = useMemo(() => {
-    const date = new Date();
-    date.setMonth(date.getMonth() - 3);
-    return format(date, "yyyy-MM-dd");
+    const d = new Date();
+    d.setMonth(d.getMonth() - 3);
+    return format(d, "yyyy-MM-dd");
   }, []);
 
+  // Debounce search input
   useEffect(() => {
-    const timer = window.setTimeout(() => onSearchChange(searchQuery), 300);
-    return () => window.clearTimeout(timer);
-  }, [searchQuery, onSearchChange]);
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
-    onDateRangeChange({ start: startDate || null, end: endDate || null });
+    onSearchChange(debouncedQuery);
+  }, [debouncedQuery, onSearchChange]);
+
+  // Notify parent of date range changes
+  useEffect(() => {
+    onDateRangeChange({
+      start: startDate || null,
+      end: endDate || null,
+    });
   }, [startDate, endDate, onDateRangeChange]);
 
+  // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleOutsideClick = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      const target = event.target as Node;
+      const isInsideVenue =
+        venueDropdownRef.current?.contains(target) ||
+        mobileVenueDropdownRef.current?.contains(target);
+      const isInsideCategory =
+        categoryDropdownRef.current?.contains(target) ||
+        mobileCategoryDropdownRef.current?.contains(target);
+      const isInsideDate =
+        dateDropdownRef.current?.contains(target) ||
+        mobileDateDropdownRef.current?.contains(target);
+
+      if (!isInsideVenue) {
         setVenueDropdownOpen(false);
+      }
+      if (!isInsideCategory) {
         setCategoryDropdownOpen(false);
+      }
+      if (!isInsideDate) {
         setDateDropdownOpen(false);
       }
+    }
+    
+    // Use mousedown for desktop (immediate)
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    // Use touchend for mobile (after touch completes) to prevent click-through
+    document.addEventListener("touchend", handleClickOutside);
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchend", handleClickOutside);
     };
-    document.addEventListener("pointerdown", handleOutsideClick);
-    return () => document.removeEventListener("pointerdown", handleOutsideClick);
   }, []);
 
-  const closeOtherPanels = (panel: "category" | "venue" | "date") => {
-    if (panel !== "category") setCategoryDropdownOpen(false);
-    if (panel !== "venue") setVenueDropdownOpen(false);
-    if (panel !== "date") setDateDropdownOpen(false);
-  };
-
-  const clearCategories = () => selectedCategories.forEach(onCategoryToggle);
-  const clearVenues = () => selectedVenues.forEach(onVenueToggle);
-  const clearDates = () => {
+  const clearDateFilter = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     setStartDate("");
     setEndDate("");
   };
 
-  const categoryLabel =
-    selectedCategories.length === 0
-      ? "Categories"
-      : selectedCategories.length === 1
-        ? CATEGORY_LABELS[selectedCategories[0]]
-        : `${selectedCategories.length} categories`;
-  const venueLabel =
-    selectedVenues.length === 0
-      ? "Venues"
-      : selectedVenues.length === 1
-        ? selectedVenues[0]
-        : `${selectedVenues.length} venues`;
-  const dateLabel = startDate && endDate
-    ? startDate === endDate
-      ? formatFilterDate(startDate)
-      : `${formatFilterDate(startDate)}–${formatFilterDate(endDate)}`
-    : startDate
-      ? `From ${formatFilterDate(startDate)}`
-      : endDate
-        ? `Until ${formatFilterDate(endDate)}`
-        : "Any date";
-  const resultLabel = resultCount === totalCount ? `${totalCount} events` : `${resultCount} of ${totalCount}`;
+  const clearVenueFilter = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    selectedVenues.forEach((v) => onVenueToggle(v));
+  };
+
+  const getDateLabel = () => {
+    if (startDate && endDate) {
+      if (startDate === endDate) {
+        return format(new Date(startDate), "MMM d");
+      }
+      return `${format(new Date(startDate), "MMM d")} - ${format(
+        new Date(endDate),
+        "MMM d"
+      )}`;
+    }
+    if (startDate) {
+      return `From ${format(new Date(startDate), "MMM d")}`;
+    }
+    if (endDate) {
+      return `Until ${format(new Date(endDate), "MMM d")}`;
+    }
+    return "Any Date";
+  };
+
+  const getVenueLabel = () => {
+    if (selectedVenues.length === 0) return "Venues";
+    if (selectedVenues.length === 1) return selectedVenues[0];
+    return `${selectedVenues.length} Venues`;
+  };
+
+  const getCategoryLabel = () => {
+    if (selectedCategories.length === 0) return "Categories";
+    if (selectedCategories.length === 1) return CATEGORY_LABELS[selectedCategories[0]];
+    return `${selectedCategories.length} Categories`;
+  };
+
+  const clearCategoryFilter = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    selectedCategories.forEach((c) => onCategoryToggle(c));
+  };
+
+  const hasDateFilter = !!(startDate || endDate);
+  const hasVenueFilter = selectedVenues.length > 0;
+  const hasCategoryFilter = selectedCategories.length > 0;
 
   return (
-    <div ref={rootRef} className="relative">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-        <div className="group relative min-w-0 flex-1 lg:max-w-md">
+    <div className="space-y-2 md:space-y-4 overflow-visible">
+      {/* Search and Filter Row */}
+      <div className="flex flex-col md:flex-row gap-2 md:gap-4 overflow-visible">
+        {/* Search Input */}
+        <div className="relative flex-1 group">
           <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 transition-colors group-focus-within:text-fuchsia-400"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-fuchsia-500 transition-colors"
+            size={20}
           />
           <input
             type="text"
+            placeholder="Search artists, venues, etc..."
             value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search artists or venues"
-            className="h-10 w-full rounded-md border border-neutral-800 bg-neutral-900 pl-9 pr-9 text-sm text-white placeholder:text-neutral-600 focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-neutral-900 border border-neutral-800 rounded-2xl py-3 md:py-2.5 pl-12 pr-12 text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 focus:border-transparent transition-colors"
           />
           {searchQuery && (
             <button
-              type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-neutral-500 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
-              aria-label="Clear search"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors"
             >
-              <X size={13} />
+              <X size={16} />
             </button>
           )}
         </div>
 
-        <div className="scrollbar-hide flex min-w-0 items-center gap-1.5 overflow-x-auto pb-0.5 lg:ml-auto lg:overflow-visible lg:pb-0">
-          <span className="mr-1 shrink-0 text-xs tabular-nums text-neutral-500" aria-live="polite">
-            {resultLabel}
-          </span>
+        {/* Desktop Filter Pills */}
+        <div className="hidden md:flex items-stretch gap-3 overflow-visible">
+          {/* New Toggle */}
+          <TogglePill
+            label="New"
+            active={showOnlyNew}
+            icon={Sparkles}
+            onClick={(e) => {
+              e.stopPropagation();
+              onShowOnlyNewToggle();
+            }}
+            tooltip="Added in the last 5 days"
+          />
 
-          <button
-            type="button"
-            onClick={onShowOnlyNewToggle}
-            className={`${controlBase} flex shrink-0 items-center gap-1.5 rounded-md px-2.5 ${
-              showOnlyNew
-                ? "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-200"
-                : "border-neutral-800 bg-neutral-900 text-neutral-400 hover:border-neutral-700 hover:text-white"
-            }`}
-            aria-pressed={showOnlyNew}
-          >
-            <Sparkles size={13} />
-            New
-          </button>
-
-          <div className="relative shrink-0">
-            <FilterControl
-              label={categoryLabel}
+          {/* Category Filter */}
+          <div className="relative" ref={categoryDropdownRef}>
+            <FilterPill
+              label={getCategoryLabel()}
+              active={hasCategoryFilter}
               icon={Tag}
-              active={selectedCategories.length > 0}
-              expanded={categoryDropdownOpen}
-              onToggle={() => {
-                closeOtherPanels("category");
+              onClick={(e) => {
+                e.stopPropagation();
                 setCategoryDropdownOpen((open) => !open);
+                setVenueDropdownOpen(false);
+                setDateDropdownOpen(false);
               }}
-              onClear={clearCategories}
+              onClear={clearCategoryFilter}
             />
             {categoryDropdownOpen && (
-              <div className="absolute right-0 top-full z-50 mt-2 hidden w-max max-w-[calc(100vw-2rem)] rounded-lg border border-neutral-800 bg-neutral-900 p-2 shadow-2xl md:block">
-                <div className="flex gap-1.5">
+              <div 
+                className="absolute mt-2 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl z-20 p-2"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex flex-wrap gap-1.5">
                   {categories.map((category) => (
                     <button
-                      type="button"
                       key={category}
-                      onClick={() => onCategoryToggle(category)}
-                      className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70 ${
-                        selectedCategories.includes(category)
-                          ? "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-200"
-                          : "border-neutral-700 bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                      }`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onCategoryToggle(category);
+                      }}
+                      className={`
+                        flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors select-none
+                        ${selectedCategories.includes(category)
+                          ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/50"
+                          : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 hover:text-white"
+                        }
+                      `}
                     >
-                      <FontAwesomeIcon icon={categoryIcons[category]} className="h-3 w-3" />
+                      <FontAwesomeIcon icon={categoryIcons[category]} className="w-3 h-3" />
                       {CATEGORY_LABELS[category]}
                     </button>
                   ))}
@@ -259,86 +351,103 @@ export default function FilterBar({
             )}
           </div>
 
-          <div className="relative shrink-0">
-            <FilterControl
-              label={venueLabel}
+          {/* Venue Filter */}
+          <div className="relative" ref={venueDropdownRef}>
+            <FilterPill
+              label={getVenueLabel()}
+              active={hasVenueFilter}
               icon={MapPin}
-              active={selectedVenues.length > 0}
-              expanded={venueDropdownOpen}
-              onToggle={() => {
-                closeOtherPanels("venue");
+              onClick={(e) => {
+                e.stopPropagation();
                 setVenueDropdownOpen((open) => !open);
+                setCategoryDropdownOpen(false);
+                setDateDropdownOpen(false);
               }}
-              onClear={clearVenues}
+              onClear={clearVenueFilter}
             />
             {venueDropdownOpen && (
-              <div className="absolute right-0 top-full z-50 mt-2 hidden max-h-72 w-64 overflow-y-auto rounded-lg border border-neutral-800 bg-neutral-900 p-2 shadow-2xl md:block">
-                <div className="space-y-1">
-                  {venues.map((venue) => {
-                    const selected = selectedVenues.includes(venue);
-                    return (
-                      <button
-                        type="button"
-                        key={venue}
-                        onClick={() => onVenueToggle(venue)}
-                        className={`flex min-h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70 ${
-                          selected
-                            ? "bg-fuchsia-500/10 text-fuchsia-200"
-                            : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
-                        }`}
-                      >
-                        <Check size={12} className={`shrink-0 ${selected ? "opacity-100" : "opacity-0"}`} />
-                        {venue}
-                      </button>
-                    );
-                  })}
+              <div 
+                className="absolute mt-2 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl z-20 p-2 right-0"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex flex-col gap-1.5">
+                  {venues.map((venue) => (
+                    <button
+                      key={venue}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onVenueToggle(venue);
+                      }}
+                      className={`
+                        px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap text-left select-none
+                        ${selectedVenues.includes(venue)
+                          ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/50"
+                          : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 hover:text-white"
+                        }
+                      `}
+                    >
+                      {venue}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
           </div>
 
-          <div className="relative shrink-0">
-            <FilterControl
-              label={dateLabel}
+          {/* Date Filter */}
+          <div className="relative" ref={dateDropdownRef}>
+            <FilterPill
+              label={getDateLabel()}
+              active={hasDateFilter}
               icon={Calendar}
-              active={Boolean(startDate || endDate)}
-              expanded={dateDropdownOpen}
-              onToggle={() => {
-                closeOtherPanels("date");
+              onClick={(e) => {
+                e.stopPropagation();
                 setDateDropdownOpen((open) => !open);
+                setCategoryDropdownOpen(false);
+                setVenueDropdownOpen(false);
               }}
-              onClear={clearDates}
+              onClear={clearDateFilter}
             />
             {dateDropdownOpen && (
-              <div className="absolute right-0 top-full z-50 mt-2 hidden w-64 rounded-lg border border-neutral-800 bg-neutral-900 p-3 shadow-2xl md:block">
+              <div
+                className="absolute mt-2 w-64 right-0 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl z-20 p-4"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="space-y-3">
-                  <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
-                    From
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-500 mb-1">
+                      From
+                    </label>
                     <input
                       type="date"
                       value={startDate}
                       min={threeMonthsAgo}
-                      onChange={(event) => setStartDate(event.target.value)}
-                      style={{ colorScheme: "dark" }}
-                      className="h-9 rounded-md border border-neutral-700 bg-neutral-950 px-2.5 text-sm font-normal text-white focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
+                      onChange={(e) => setStartDate(e.target.value)}
+                      style={{ colorScheme: 'dark' }}
+                      className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
                     />
-                  </label>
-                  <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
-                    To
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-500 mb-1">
+                      To
+                    </label>
                     <input
                       type="date"
                       value={endDate}
                       min={startDate || threeMonthsAgo}
-                      onChange={(event) => setEndDate(event.target.value)}
-                      style={{ colorScheme: "dark" }}
-                      className="h-9 rounded-md border border-neutral-700 bg-neutral-950 px-2.5 text-sm font-normal text-white focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
+                      onChange={(e) => setEndDate(e.target.value)}
+                      style={{ colorScheme: 'dark' }}
+                      className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
                     />
-                  </label>
-                  {(startDate || endDate) && (
+                  </div>
+                  {hasDateFilter && (
                     <button
                       type="button"
-                      onClick={clearDates}
-                      className="h-8 w-full rounded-md text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
+                      onClick={clearDateFilter}
+                      className="w-full text-sm text-fuchsia-400 hover:text-fuchsia-300 transition-colors py-1"
                     >
                       Clear dates
                     </button>
@@ -350,91 +459,188 @@ export default function FilterBar({
         </div>
       </div>
 
-      {categoryDropdownOpen && (
-        <div className="mt-2 flex flex-wrap gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 p-2.5 shadow-2xl md:hidden">
-          {categories.map((category) => {
-            const selected = selectedCategories.includes(category);
-            return (
-              <button
-                type="button"
-                key={category}
-                onClick={() => onCategoryToggle(category)}
-                className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70 ${
-                  selected
-                    ? "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-200"
-                    : "border-neutral-800 bg-neutral-950/50 text-neutral-400 hover:border-neutral-700 hover:text-white"
-                }`}
-              >
-                <FontAwesomeIcon icon={categoryIcons[category]} className="h-3 w-3" />
-                {CATEGORY_LABELS[category]}
-              </button>
-            );
-          })}
+      {/* Mobile Filter Pills */}
+      <div className="md:hidden space-y-3 overflow-visible">
+        {/* Filter Buttons Row */}
+        <div className="flex justify-center gap-1.5 pb-1 overflow-visible">
+          <TogglePill
+            label="New"
+            active={showOnlyNew}
+            icon={Sparkles}
+            onClick={(e) => {
+              e.stopPropagation();
+              onShowOnlyNewToggle();
+            }}
+            tooltip="Added in the last 5 days"
+          />
+          <div ref={mobileCategoryDropdownRef}>
+            <FilterPill
+              label={getCategoryLabel()}
+              active={hasCategoryFilter}
+              icon={Tag}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCategoryDropdownOpen((open) => !open);
+                setVenueDropdownOpen(false);
+                setDateDropdownOpen(false);
+              }}
+              onClear={clearCategoryFilter}
+            />
+          </div>
+          <div ref={mobileVenueDropdownRef}>
+            <FilterPill
+              label={getVenueLabel()}
+              active={hasVenueFilter}
+              icon={MapPin}
+              onClick={(e) => {
+                e.stopPropagation();
+                setVenueDropdownOpen((open) => !open);
+                setCategoryDropdownOpen(false);
+                setDateDropdownOpen(false);
+              }}
+              onClear={clearVenueFilter}
+            />
+          </div>
+          <div ref={mobileDateDropdownRef}>
+            <FilterPill
+              label={getDateLabel()}
+              active={hasDateFilter}
+              icon={Calendar}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDateDropdownOpen((open) => !open);
+                setCategoryDropdownOpen(false);
+                setVenueDropdownOpen(false);
+              }}
+              onClear={clearDateFilter}
+            />
+          </div>
         </div>
-      )}
 
-      {venueDropdownOpen && (
-        <div className="mt-2 max-h-52 overflow-y-auto rounded-lg border border-neutral-800 bg-neutral-900 p-2.5 shadow-2xl md:hidden">
-          <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
-            {venues.map((venue) => {
-              const selected = selectedVenues.includes(venue);
-              return (
+        {/* Dropdown Content - Renders below buttons, pushes content down */}
+        {categoryDropdownOpen && (
+          <div 
+            className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl p-2 z-50"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {categories.map((category) => (
                 <button
-                  type="button"
-                  key={venue}
-                  onClick={() => onVenueToggle(venue)}
-                  className={`flex min-h-8 items-center gap-2 rounded-md px-2.5 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70 ${
-                    selected
-                      ? "bg-fuchsia-500/10 text-fuchsia-200"
-                      : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
-                  }`}
+                  key={category}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onCategoryToggle(category);
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onCategoryToggle(category);
+                  }}
+                  className={`
+                    flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors select-none
+                    ${selectedCategories.includes(category)
+                      ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/50"
+                      : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 hover:text-white active:bg-neutral-600"
+                    }
+                  `}
                 >
-                  <Check size={12} className={`shrink-0 ${selected ? "opacity-100" : "opacity-0"}`} />
+                  <FontAwesomeIcon icon={categoryIcons[category]} className="w-3 h-3" />
+                  {CATEGORY_LABELS[category]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {venueDropdownOpen && (
+          <div 
+            className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl p-2 z-50"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {venues.map((venue) => (
+                <button
+                  key={venue}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onVenueToggle(venue);
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onVenueToggle(venue);
+                  }}
+                  className={`
+                    px-2 py-1 rounded-md text-xs font-medium transition-colors select-none
+                    ${selectedVenues.includes(venue)
+                      ? "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/50"
+                      : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 hover:text-white active:bg-neutral-600"
+                    }
+                  `}
+                >
                   {venue}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {dateDropdownOpen && (
-        <div className="mt-2 rounded-lg border border-neutral-800 bg-neutral-900 p-3 shadow-2xl md:hidden">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-neutral-500">
-              From
-              <input
-                type="date"
-                value={startDate}
-                min={threeMonthsAgo}
-                onChange={(event) => setStartDate(event.target.value)}
-                style={{ colorScheme: "dark" }}
-                className="h-9 rounded-md border border-neutral-700 bg-neutral-950 px-2.5 text-sm font-normal text-white focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
-              />
-            </label>
-            <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-neutral-500">
-              To
-              <input
-                type="date"
-                value={endDate}
-                min={startDate || threeMonthsAgo}
-                onChange={(event) => setEndDate(event.target.value)}
-                style={{ colorScheme: "dark" }}
-                className="h-9 rounded-md border border-neutral-700 bg-neutral-950 px-2.5 text-sm font-normal text-white focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
-              />
-            </label>
-            {(startDate || endDate) && (
-              <button
-                type="button"
-                onClick={clearDates}
-                className="h-9 rounded-md px-3 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/70"
-              >
-                Clear dates
-              </button>
-            )}
+        {dateDropdownOpen && (
+          <div 
+            className="bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl p-4 z-50"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1">
+                  From
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  min={threeMonthsAgo}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  style={{ colorScheme: 'dark' }}
+                  className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500 appearance-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1">
+                  To
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || threeMonthsAgo}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  style={{ colorScheme: 'dark' }}
+                  className="w-full px-3 py-2 border border-neutral-700 rounded-lg bg-neutral-800 text-white text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500 appearance-none"
+                />
+              </div>
+              {hasDateFilter && (
+                <button
+                  type="button"
+                  onClick={clearDateFilter}
+                  className="w-full text-sm text-fuchsia-400 hover:text-fuchsia-300 transition-colors py-1"
+                >
+                  Clear dates
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

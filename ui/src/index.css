@@ -10,7 +10,6 @@ html {
 body {
   background-color: #0a0a0a;
   color-scheme: dark;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
@@ -19,7 +18,6 @@ body {
 
 #root {
   background-color: #0a0a0a;
-  min-height: 100vh;
 }
 
 /* Selection color */
@@ -37,22 +35,15 @@ body {
   display: none;
 }
 
-/* Keep the event list scrollbar subtle but discoverable. */
+/* Hide scrollbar on virtualized list */
 [style*="overflow: auto"],
 [style*="overflow:auto"] {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(64 64 64) transparent;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 [style*="overflow: auto"]::-webkit-scrollbar,
 [style*="overflow:auto"]::-webkit-scrollbar {
-  width: 8px;
-}
-[style*="overflow: auto"]::-webkit-scrollbar-thumb,
-[style*="overflow:auto"]::-webkit-scrollbar-thumb {
-  background: rgb(64 64 64);
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background-clip: padding-box;
+  display: none;
 }
 
 /* Custom date input styling for dark mode */

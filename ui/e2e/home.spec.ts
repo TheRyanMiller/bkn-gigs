@@ -76,25 +76,10 @@ test("loads events and opens modal", async ({ page }) => {
   await expect(page.getByText("Sample Band")).toBeVisible();
   await expect(page.getByLabel("Open Spotify artist").first()).toBeVisible();
 
-  const eventRow = page.getByRole("button", { name: "View Sample Band at Brooklyn Steel" });
-  const rowBox = await eventRow.boundingBox();
-  expect(rowBox?.height).toBe(120);
-
-  await eventRow.press("Enter");
+  await page.getByText("Sample Band").click();
   await expect(page).toHaveURL(/\\?event=/);
   await expect(page.getByText("A detailed artist biography for this show.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Tickets" })).toBeVisible();
-});
-
-test("compact mobile layout does not overflow horizontally", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-
-  await expect(page.getByRole("button", { name: "View Sample Band at Brooklyn Steel" })).toBeVisible();
-  const hasHorizontalOverflow = await page.evaluate(
-    () => document.documentElement.scrollWidth > window.innerWidth
-  );
-  expect(hasHorizontalOverflow).toBe(false);
 });
 
 test("expanding long descriptions does not resize modal image", async ({ page }) => {
