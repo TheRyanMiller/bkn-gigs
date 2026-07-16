@@ -36,6 +36,8 @@ test("toggles the new-only filter", () => {
 test("opens category choices and selects a category", () => {
   const props = renderFilterBar();
   fireEvent.click(screen.getByRole("button", { name: /Categories/ }));
-  fireEvent.click(screen.getByRole("button", { name: "Concerts" }));
+  const concertOptions = screen.getAllByRole("button", { name: "Concerts" });
+  expect(concertOptions[0].querySelector('[data-icon="guitar"]')).not.toBeNull();
+  fireEvent.click(concertOptions[0]);
   expect(props.onCategoryToggle).toHaveBeenCalledWith("concerts");
 });
