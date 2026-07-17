@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { forwardRef, useState, useMemo, useCallback, useEffect, useRef } from "react";
+import type { HTMLAttributes } from "react";
 import { VariableSizeList as List } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { Music, Loader2 } from "lucide-react";
@@ -20,6 +21,11 @@ interface DateRange {
 const CARD_GAP = 16;
 const LIST_TOP_BUFFER = 8;
 const DESKTOP_CARD_HEIGHT = 195;
+
+const EventListOuter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  (props, ref) => <div ref={ref} {...props} data-testid="events-list" />
+);
+EventListOuter.displayName = "EventListOuter";
 
 // Get today's date in YYYY-MM-DD format for comparison (US Eastern timezone)
 const getTodayString = () => {
@@ -285,6 +291,7 @@ export default function Home({ events, loading, onEventClick }: HomeProps) {
             {({ height, width }) => (
               <List
                 ref={listRef}
+                outerElementType={EventListOuter}
                 height={height}
                 width={width}
                 itemCount={filteredEvents.length}

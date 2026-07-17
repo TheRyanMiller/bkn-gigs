@@ -44,6 +44,23 @@ test.beforeEach(async ({ page }) => {
       last_seen: now,
       is_new: true,
     },
+    ...Array.from({ length: 30 }, (_, index) => ({
+      slug: `${today}-union-pool-filler-band-${index + 1}`,
+      venue: "Union Pool",
+      date: today,
+      doors_time: "19:00",
+      show_time: "20:00",
+      artists: [{ name: `Filler Band ${index + 1}`, spotify_url: null }],
+      price: "$15",
+      ticket_url: "https://example.com/tickets",
+      info_url: "https://example.com/info",
+      image_url: testImage,
+      description: null,
+      category: "concerts",
+      first_seen: now,
+      last_seen: now,
+      is_new: false,
+    })),
   ];
 
   const status = {
@@ -80,6 +97,41 @@ test("loads events and opens modal", async ({ page }) => {
   await expect(page).toHaveURL(/\\?event=/);
   await expect(page.getByText("A detailed artist biography for this show.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Tickets" })).toBeVisible();
+});
+
+test("back closes the modal, preserves list position, and forward reopens it", async ({ page }) => {
+  await page.goto("/");
+
+  const list = page.getByTestId("events-list");
+  await list.evaluate((element) => element.scrollTo({ top: 1300 }));
+  await expect(page.getByText("Filler Band 6")).toBeVisible();
+
+  await page.getByText("Filler Band 6").click();
+  await expect(page.getByTestId("event-modal-scroll-area")).toBeVisible();
+  await expect(page).toHaveURL(/\?event=/);
+  const scrollAtOpen = await list.evaluate((element) => element.scrollTop);
+
+  await page.goBack();
+  await expect(page.getByTestId("event-modal-scroll-area")).toHaveCount(0);
+  await expect(page).not.toHaveURL(/\?event=/);
+  await expect(page.getByText("Filler Band 6")).toBeVisible();
+  await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(scrollAtOpen);
+
+  await page.goForward();
+  await expect(page.getByTestId("event-modal-scroll-area")).toBeVisible();
+  await expect(page).toHaveURL(/\?event=/);
+});
+
+test("closing a directly linked event returns to the list", async ({ page }) => {
+  const eventSlug = `${getTodayET()}-brooklyn-steel-sample-band`;
+  await page.goto(`/?event=${eventSlug}`);
+
+  await expect(page.getByTestId("event-modal-scroll-area")).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await expect(page.getByTestId("event-modal-scroll-area")).toHaveCount(0);
+  await expect(page).not.toHaveURL(/\?event=/);
+  await expect(page.getByText("Sample Band")).toBeVisible();
 });
 
 test("expanding long descriptions does not resize modal image", async ({ page }) => {

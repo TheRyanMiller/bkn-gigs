@@ -1,5 +1,12 @@
-import { BrowserRouter as Router, Routes, Route, useSearchParams } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Home from "./pages/Home";
 import Favorites from "./pages/Favorites";
 import Header from "./components/Header";
@@ -11,27 +18,43 @@ import { Event, ScrapeStatus } from "./types";
 
 function AppContent() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [scrapeStatus, setScrapeStatus] = useState<ScrapeStatus | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const selectedEvent = useMemo(() => {
+    const eventSlug = searchParams.get("event");
+    return eventSlug ? events.find((event) => event.slug === eventSlug) || null : null;
+  }, [events, searchParams]);
 
   // Handle event selection with URL update
-  const handleEventSelect = useCallback((event: Event | null) => {
-    setSelectedEvent(event);
-    if (event) {
-      setSearchParams({ event: event.slug });
-    } else {
-      setSearchParams({});
-    }
-  }, [setSearchParams]);
+  const handleEventSelect = useCallback((event: Event) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("event", event.slug);
+    navigate(
+      { pathname: location.pathname, search: `?${nextParams.toString()}` },
+      { state: { eventModal: true } }
+    );
+  }, [location.pathname, navigate, searchParams]);
 
   // Handle modal close
   const handleModalClose = useCallback(() => {
-    setSelectedEvent(null);
-    setSearchParams({});
-  }, [setSearchParams]);
+    if (location.state?.eventModal) {
+      navigate(-1);
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("event");
+    const nextSearch = nextParams.toString();
+    navigate(
+      { pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : "" },
+      { replace: true }
+    );
+  }, [location.pathname, location.state, navigate, searchParams]);
 
   useEffect(() => {
     let alive = true;
@@ -50,15 +73,6 @@ function AppContent() {
         }
         setEvents(nextEvents);
         setLoading(false);
-
-        // Check for event slug in URL and open modal
-        const eventSlug = new URL(window.location.href).searchParams.get("event");
-        if (eventSlug) {
-          const event = nextEvents.find((e) => e.slug === eventSlug);
-          if (event) {
-            setSelectedEvent(event);
-          }
-        }
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
