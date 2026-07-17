@@ -45,4 +45,10 @@ USER_AGENT = os.getenv(
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
 )
 
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_SEARCH_LIMIT = int(os.getenv("SPOTIFY_SEARCH_LIMIT", "50"))
+SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
+SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search"
+
 CATEGORIES = {"concerts", "comedy", "broadway", "sports", "misc"}

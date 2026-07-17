@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from scraper import spotify_enrichment
 from scraper.pipeline.io import append_log, load_events, load_seen_cache, trim_log, write_outputs
 from scraper.pipeline.merge import merge_seen_cache, sort_events
 from scraper.pipeline.validate import validate_events
@@ -55,6 +56,11 @@ def run() -> dict[str, Any]:
             log.exception("%s failed", scraper.name)
 
     events, seen_cache = merge_seen_cache(sort_events(all_events), seen_cache, scraped_at=scraped_at)
+    events = spotify_enrichment.enrich_events_with_spotify(
+        events,
+        run_timestamp=scraped_at,
+        log_func=log.info,
+    )
     events = sort_events(events)
     validate_events(events)
 
