@@ -22,7 +22,7 @@ interface EventCardProps {
 }
 
 function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
-  const { venue, date, doors_time, artists, price, image_url, ticket_url, slug, category, is_new, stage } = event;
+  const { venue, date, doors_time, show_time, artists, price, image_url, ticket_url, slug, category, is_new, stage } = event;
   const [copied, setCopied] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(slug);
@@ -51,6 +51,12 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
   };
 
   const doorsFormatted = formatTime(doors_time);
+  const showFormatted = formatTime(show_time);
+  const timeLabel = doorsFormatted
+    ? `Doors ${doorsFormatted}${showFormatted ? ` · Show ${showFormatted}` : ""}`
+    : showFormatted
+      ? `Show ${showFormatted}`
+      : null;
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -168,10 +174,10 @@ function EventCard({ event, onClick, mobileHeight }: EventCardProps) {
               <CalendarDays size={14} className="text-fuchsia-500 shrink-0" />
               <span>{formattedDate}</span>
             </div>
-            {doorsFormatted && (
+            {timeLabel && (
               <div className="flex items-center gap-2">
                 <Clock size={14} className="text-fuchsia-500 shrink-0" />
-                <span>Doors {doorsFormatted}</span>
+                <span>{timeLabel}</span>
               </div>
             )}
             {price && (

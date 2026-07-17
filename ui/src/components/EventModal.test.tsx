@@ -54,3 +54,14 @@ test("hides event description section when absent", () => {
   renderWithProviders(baseEvent);
   expect(screen.queryByText("About")).toBeNull();
 });
+
+test("shows the show time when doors time is unavailable", () => {
+  const event = { ...baseEvent, doors_time: null, show_time: "23:00" };
+  renderWithProviders(event);
+  expect(screen.getByText("Show 11:00 PM")).toBeInTheDocument();
+});
+
+test("shows both doors and show times when available", () => {
+  renderWithProviders(baseEvent);
+  expect(screen.getByText("Doors 07:00 PM · Show 08:00 PM")).toBeInTheDocument();
+});

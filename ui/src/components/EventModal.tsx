@@ -62,6 +62,14 @@ export default function EventModal({ event, onClose }: EventModalProps) {
     return `${hour12.toString().padStart(2, "0")}:${minutes} ${ampm}`;
   };
 
+  const doorsFormatted = formatTime(doors_time);
+  const showFormatted = formatTime(show_time);
+  const timeLabel = doorsFormatted
+    ? `Doors ${doorsFormatted}${showFormatted ? ` · Show ${showFormatted}` : ""}`
+    : showFormatted
+      ? `Show ${showFormatted}`
+      : null;
+
   const descriptionText = description?.trim() || "";
   const isLongDescription = descriptionText.length > DESCRIPTION_COLLAPSE_THRESHOLD;
   const descriptionParagraphs = descriptionText
@@ -192,13 +200,10 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                           <span>{formattedDate}</span>
                         </div>
 
-                        {doors_time && (
+                        {timeLabel && (
                           <div className="flex items-center gap-2 text-neutral-300 text-sm">
                             <Clock size={14} className="text-fuchsia-500" />
-                            <span>
-                              Doors {formatTime(doors_time)}
-                              {show_time && ` · Show ${formatTime(show_time)}`}
-                            </span>
+                            <span>{timeLabel}</span>
                           </div>
                         )}
 
