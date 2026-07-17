@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
-from typing import Any
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
-from scraper.http import get_json, make_session
+from scraper.http import get_text
 from scraper.utils.categories import detect_category_from_text
+from scraper.utils.dates import normalize_time
 from scraper.utils.descriptions import clean_text
 from scraper.utils.events import absolute_url, build_event, make_artists
 
 BASE_URL = "https://www.brooklynbowl.com"
+LIST_URL = f"{BASE_URL}/brooklyn/shows/all"
 
 
 def _month_iter(start: date, count: int):
@@ -24,86 +26,94 @@ def _month_iter(start: date, count: int):
             year += 1
 
 
-def _html_chunks(value: Any) -> list[str]:
-    if isinstance(value, str):
-        return [value]
-    if isinstance(value, list):
-        return [item for item in value if isinstance(item, str)]
-    if isinstance(value, dict):
-        chunks: list[str] = []
-        for item in value.values():
-            chunks.extend(_html_chunks(item))
-        return chunks
-    return []
+def _time_from_label(value: str | None, label: str) -> str | None:
+    match = re.search(rf"\b{label}\s*:\s*([^/|]+)", value or "", re.I)
+    return normalize_time(match.group(1)) if match else None
 
 
-def _parse_item(html: str, day: str) -> dict | None:
-    soup = BeautifulSoup(html, "html.parser")
-    item = soup.select_one("[data-venue-uri='brooklyn']") or soup
-    if item is soup and "data-venue-uri=\"brooklyn\"" not in html and "Brooklyn" not in item.get_text(" "):
-        return None
-
-    title_node = item.select_one(".event-title, .title, h3, h2, a")
-    title = clean_text(title_node.get_text(" ", strip=True)) if title_node else None
-    if not title:
-        return None
+def _is_excluded(title: str) -> bool:
     title_lower = title.lower()
-    if (
+    return (
         title_lower.startswith("closed")
         or "closed for a private event" in title_lower
         or "full venue closed" in title_lower
         or "gift card" in title_lower
-    ):
-        return None
-
-    support = clean_text((item.select_one(".support, h4, .event-support") or BeautifulSoup("", "html.parser")).get_text(" ", strip=True))
-    link_node = item.select_one("a[href*='/brooklyn/events/'], a[href*='/event/'], a[href]")
-    info_url = absolute_url(link_node.get("href") if link_node else None, BASE_URL)
-    image_node = item.select_one("img")
-    image_url = absolute_url((image_node.get("data-src") or image_node.get("src")) if image_node else None, BASE_URL)
-    description = support
-    artists = make_artists([title, support])
-    return build_event(
-        venue="Brooklyn Bowl",
-        date=day,
-        doors_time=None,
-        show_time=None,
-        artists=artists,
-        ticket_url=info_url,
-        info_url=info_url,
-        image_url=image_url,
-        description=description,
-        price=None,
-        category=detect_category_from_text(title, support, default="concerts"),
     )
 
 
-def scrape_brooklyn_bowl(*, months: int = 8) -> list[dict]:
-    session = make_session()
-    session.cookies.set("selectedVenue", "brooklyn", domain="www.brooklynbowl.com")
+def _node_text(item: Tag, selector: str) -> str | None:
+    node = item.select_one(selector)
+    return clean_text(node.get_text(" ", strip=True)) if node else None
+
+
+def _parse_listing(
+    html: str,
+    *,
+    allowed_months: set[tuple[int, int]] | None = None,
+) -> list[dict]:
+    soup = BeautifulSoup(html, "html.parser")
     events: list[dict] = []
     seen: set[str] = set()
-    for year, month in _month_iter(date.today(), months):
-        payload = get_json(
-            f"{BASE_URL}/events/calendar/{year}/{month}",
-            session=session,
-            params={"v": "2", "detail_partial": "modules/events/partials/full_page_calendar_event_item"},
-            headers={"X-Requested-With": "XMLHttpRequest", "Accept": "application/json"},
-        )
-        if not isinstance(payload, dict):
+
+    for item in soup.select(".eventItem"):
+        venue = _node_text(item, ".venue")
+        if venue and venue.lower() != "brooklyn":
             continue
-        for raw_day, raw_html in payload.items():
-            try:
-                day = datetime.strptime(raw_day, "%m-%d-%Y").date().isoformat()
-            except ValueError:
-                continue
-            for chunk in _html_chunks(raw_html):
-                event = _parse_item(chunk, day)
-                if not event:
-                    continue
-                key = event.get("info_url") or f"{event['date']}:{event['artists'][0]['name']}"
-                if key in seen:
-                    continue
-                seen.add(key)
-                events.append(event)
+
+        title_node = item.select_one("h3.title a")
+        title = clean_text(title_node.get_text(" ", strip=True)) if title_node else None
+        if not title or _is_excluded(title):
+            continue
+
+        date_node = item.select_one(".date.outside[aria-label], .date[aria-label]")
+        raw_date = clean_text(date_node.get("aria-label")) if date_node else None
+        try:
+            parsed_date = datetime.strptime(raw_date or "", "%B %d %Y").date()
+        except ValueError:
+            continue
+        if allowed_months is not None and (parsed_date.year, parsed_date.month) not in allowed_months:
+            continue
+
+        pre_title = _node_text(item, ".pre-title-tagline")
+        support = _node_text(item, ".tagline")
+        description = " — ".join(part for part in (pre_title, support) if part)
+
+        info_url = absolute_url(title_node.get("href"), BASE_URL)
+        ticket_node = item.select_one(".buttons a[href]")
+        ticket_url = absolute_url(ticket_node.get("href") if ticket_node else None, BASE_URL) or info_url
+
+        image_node = item.select_one(".thumb img, img")
+        image_url = absolute_url(
+            (image_node.get("data-src") or image_node.get("src")) if image_node else None,
+            BASE_URL,
+        )
+        time_text = _node_text(item, ".time")
+
+        event = build_event(
+            venue="Brooklyn Bowl",
+            date=parsed_date.isoformat(),
+            doors_time=_time_from_label(time_text, "Doors"),
+            show_time=_time_from_label(time_text, "Show"),
+            artists=make_artists([title, support]),
+            ticket_url=ticket_url,
+            info_url=info_url,
+            image_url=image_url,
+            description=description or None,
+            price=None,
+            category=detect_category_from_text(title, description, default="concerts"),
+        )
+        if not event:
+            continue
+
+        key = event.get("info_url") or f"{event['date']}:{event['artists'][0]['name']}"
+        if key in seen:
+            continue
+        seen.add(key)
+        events.append(event)
+
     return events
+
+
+def scrape_brooklyn_bowl(*, months: int = 8) -> list[dict]:
+    allowed_months = set(_month_iter(date.today(), months))
+    return _parse_listing(get_text(LIST_URL), allowed_months=allowed_months)

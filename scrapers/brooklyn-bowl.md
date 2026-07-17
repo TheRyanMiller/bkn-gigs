@@ -2,7 +2,7 @@
 
 ## Scraping approach
 
-Brooklyn Bowl calendar data is loaded from `/events/calendar/{year}/{month}` with the `selectedVenue=brooklyn` context. The JSON response contains rendered HTML event snippets.
+Brooklyn Bowl events are parsed from the server-rendered `/brooklyn/shows/all` listing. This uses one normal page request instead of repeated calendar API calls, which are rejected on some hosted runners.
 
 ## Category mappings
 
@@ -10,8 +10,8 @@ Concerts are the default, with shared keyword detection applied to titles and su
 
 ## Edge cases
 
-The calendar response can include other Brooklyn Bowl locations. The scraper filters snippets for the Brooklyn venue marker.
+The listing includes closure notices and gift cards, which are excluded. Venue labels are checked so events from other Brooklyn Bowl locations cannot leak into the feed.
 
 ## Opinionated decisions
 
-Detail URLs are used as both `ticket_url` and `info_url` because the calendar HTML does not consistently expose a separate ticketing URL.
+The external ticket button is preferred for `ticket_url`; the Brooklyn Bowl detail page is retained as `info_url` and used as the ticket fallback when necessary.
