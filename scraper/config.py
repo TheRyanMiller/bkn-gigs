@@ -3,6 +3,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 APP_SLUG = os.getenv("APP_SLUG", "bkn-gigs")
 APP_ENV = os.getenv("APP_ENV", "prod")
 
@@ -42,4 +46,3 @@ USER_AGENT = os.getenv(
 )
 
 CATEGORIES = {"concerts", "comedy", "broadway", "sports", "misc"}
-

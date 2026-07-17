@@ -1,3 +1,5 @@
+import pytest
+
 from scraper.pipeline import r2
 
 
@@ -12,3 +14,15 @@ def test_shared_artist_cache_keys_are_under_shared_prefix():
     assert r2.shared_key("artist-cache.json") == "shared/artist-cache.json"
     assert r2.shared_key("artist-spotify-cache.json") == "shared/artist-spotify-cache.json"
 
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "events.json",
+        "apps/atl-gigs/prod/public/events.json",
+        "shared/seen-cache.json",
+    ],
+)
+def test_non_bkn_app_keys_are_rejected(key):
+    with pytest.raises(ValueError, match="outside the BKN Gigs namespace"):
+        r2._ensure_allowed_key(key)

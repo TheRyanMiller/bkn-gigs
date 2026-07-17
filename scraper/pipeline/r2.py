@@ -16,6 +16,12 @@ from scraper import config
 
 log = logging.getLogger(__name__)
 
+_BKN_APP_PREFIX = "apps/bkn-gigs/"
+_SHARED_ARTIST_CACHE_KEYS = {
+    "shared/artist-cache.json",
+    "shared/artist-spotify-cache.json",
+}
+
 
 def _join(prefix: str, name: str) -> str:
     key = f"{prefix.strip('/')}/{name.strip('/')}"
@@ -24,16 +30,23 @@ def _join(prefix: str, name: str) -> str:
     return key
 
 
+def _ensure_allowed_key(key: str) -> str:
+    normalized = key.strip("/")
+    if normalized.startswith(_BKN_APP_PREFIX) or normalized in _SHARED_ARTIST_CACHE_KEYS:
+        return normalized
+    raise ValueError(f"R2 key is outside the BKN Gigs namespace: {normalized}")
+
+
 def public_key(name: str) -> str:
-    return _join(config.R2_PUBLIC_PREFIX, name)
+    return _ensure_allowed_key(_join(config.R2_PUBLIC_PREFIX, name))
 
 
 def state_key(name: str) -> str:
-    return _join(config.R2_STATE_PREFIX, name)
+    return _ensure_allowed_key(_join(config.R2_STATE_PREFIX, name))
 
 
 def shared_key(name: str) -> str:
-    return _join(config.R2_SHARED_PREFIX, name)
+    return _ensure_allowed_key(_join(config.R2_SHARED_PREFIX, name))
 
 
 def r2_enabled() -> bool:
@@ -60,6 +73,7 @@ def client():
 
 
 def download_json(key: str, default: Any) -> Any:
+    key = _ensure_allowed_key(key)
     r2 = client()
     if not r2:
         return default
@@ -72,6 +86,7 @@ def download_json(key: str, default: Any) -> Any:
 
 
 def upload_json(key: str, data: Any) -> None:
+    key = _ensure_allowed_key(key)
     r2 = client()
     if not r2:
         return
@@ -85,6 +100,7 @@ def upload_json(key: str, data: Any) -> None:
 
 
 def upload_file(key: str, path: Path, content_type: str = "text/plain") -> None:
+    key = _ensure_allowed_key(key)
     r2 = client()
     if not r2 or not path.exists():
         return
