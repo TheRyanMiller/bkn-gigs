@@ -16,4 +16,14 @@ def test_registry_contains_active_brooklyn_venues():
         "The Bell House",
         "Union Hall",
         "Brooklyn Paramount",
+        "Barclays Center",
+        "Kings Theatre",
+        "Under the K Bridge",
+        "Lena Horne Bandshell",
     ]
+
+
+def test_outdoor_seasonal_venues_allow_empty_results():
+    scrapers = {scraper.name: scraper for scraper in get_scrapers()}
+    assert scrapers["Under the K Bridge"].allow_empty is True
+    assert scrapers["Lena Horne Bandshell"].allow_empty is True

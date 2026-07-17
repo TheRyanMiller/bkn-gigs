@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from typing import Callable
 
 from scraper.utils.dates import today_local
+from scraper.venues.aeg import scrape_under_the_k_bridge
+from scraper.venues.atg import scrape_kings_theatre
+from scraper.venues.barclays import scrape_barclays_center
 from scraper.venues.bowery import scrape_bowery_venue
+from scraper.venues.bric import scrape_bric_celebrate_brooklyn
 from scraper.venues.brooklyn_bowl import scrape_brooklyn_bowl
 from scraper.venues.dice import scrape_dice_events
 from scraper.venues.elsewhere import scrape_elsewhere
@@ -18,6 +22,7 @@ from scraper.venues.venuepilot import scrape_venuepilot_events
 class VenueScraper:
     name: str
     fetch: Callable[[], list[dict]]
+    allow_empty: bool = False
 
 
 def get_scrapers() -> list[VenueScraper]:
@@ -51,4 +56,8 @@ def get_scrapers() -> list[VenueScraper]:
         VenueScraper("The Bell House", lambda: scrape_live_nation_venue("The Bell House", "KovZ917ARvk")),
         VenueScraper("Union Hall", scrape_union_hall),
         VenueScraper("Brooklyn Paramount", lambda: scrape_live_nation_venue("Brooklyn Paramount", "KovZpZA77ldA")),
+        VenueScraper("Barclays Center", scrape_barclays_center),
+        VenueScraper("Kings Theatre", scrape_kings_theatre),
+        VenueScraper("Under the K Bridge", scrape_under_the_k_bridge, allow_empty=True),
+        VenueScraper("Lena Horne Bandshell", scrape_bric_celebrate_brooklyn, allow_empty=True),
     ]

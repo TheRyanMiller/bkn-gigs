@@ -29,7 +29,7 @@ def run() -> dict[str, Any]:
         try:
             events = scraper.fetch()
             future_events = [event for event in events if event.get("date", "") >= today]
-            if not future_events:
+            if not future_events and not scraper.allow_empty:
                 raise ValueError(f"{scraper.name} returned no future events")
             validate_events(future_events)
             all_events.extend(future_events)
