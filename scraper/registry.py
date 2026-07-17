@@ -8,11 +8,9 @@ from scraper.venues.bowery import scrape_bowery_venue
 from scraper.venues.brooklyn_bowl import scrape_brooklyn_bowl
 from scraper.venues.dice import scrape_dice_events
 from scraper.venues.elsewhere import scrape_elsewhere
-from scraper.venues.eventbrite_html import scrape_littlefield
 from scraper.venues.live_nation_content import scrape_live_nation_venue
 from scraper.venues.seetickets import scrape_babys_all_right
 from scraper.venues.spacecrafted import scrape_union_hall
-from scraper.venues.squarespace import scrape_brooklyn_comedy_collective
 from scraper.venues.venuepilot import scrape_venuepilot_events
 
 
@@ -52,17 +50,5 @@ def get_scrapers() -> list[VenueScraper]:
         ),
         VenueScraper("The Bell House", lambda: scrape_live_nation_venue("The Bell House", "KovZ917ARvk")),
         VenueScraper("Union Hall", scrape_union_hall),
-        VenueScraper("Littlefield", scrape_littlefield),
-        VenueScraper(
-            "C'mon Everybody",
-            lambda: scrape_dice_events(
-                "C'mon Everybody",
-                api_key="PyghT2k59li4oGXIef8t4Git2vRl58H7WAuUJGpd",
-                venue_filters=["C'mon Everybody", "Cmon Everybody"],
-                default_category="concerts",
-            ),
-        ),
-        VenueScraper("Brooklyn Comedy Collective", scrape_brooklyn_comedy_collective),
         VenueScraper("Brooklyn Paramount", lambda: scrape_live_nation_venue("Brooklyn Paramount", "KovZpZA77ldA")),
     ]
-
